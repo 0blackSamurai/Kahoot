@@ -1,0 +1,97 @@
+/* Dark mode global styles */
+
+:root {
+    --bg-color: #ebe5e5;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --input-bg: #ffffff;
+    --input-text: #333333;
+    --input-border: #cccccc;
+    --border-color: #dddddd;
+    --accent-color: #4CAF50;
+    --accent-hover: #3d8b40;
+    --secondary-bg: #1e1e1e;
+    --secondary-text: #ffffff;
+}
+
+body.dark-mode {
+    --bg-color: #121212;
+    --card-bg: #1e1e1e;
+    --text-color: #e0e0e0;
+    --input-bg: #2c2c2c;
+    --input-text: #e0e0e0;
+    --input-border: #444444;
+    --border-color: #333333;
+    --secondary-bg: #2c2c2c;
+    --secondary-text: #e0e0e0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Dark mode for common elements */
+.card, .panel, .container-box {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+input, select, textarea {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--input-border);
+}
+
+/* Table styles for dark mode */
+table {
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+th {
+    background-color: var(--secondary-bg);
+    color: var(--secondary-text);
+}
+
+tr:hover {
+    background-color: var(--secondary-bg);
+}
+
+/* Modal styles */
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Button styles for dark mode */
+.btn-dark-mode-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px;
+    border-radius: 50%;
+    background-color: #673AB7;
+    color: white;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    cursor: pointer;
+    z-index: 1000;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.btn-dark-mode-toggle:hover {
+    transform: scale(1.1);
+    background-color: #5e35b1;
+}
+
+.btn-dark-mode-toggle i {
+    font-size: 1.5em;
+}

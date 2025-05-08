@@ -1,0 +1,995 @@
+<%- include('./partials/header') %>
+<link rel="stylesheet" href="/css/kahoot-dark.css">
+
+<div class="host-container">
+    <div class="host-header">
+        <h1><%= quiz.title %></h1>
+        <div class="host-actions">
+            <a href="/profile" class="btn-secondary"><i class="fas fa-home"></i> Back to Profile</a>
+        </div>
+    </div>
+    
+    <div class="game-code-section">
+        <div class="game-code-display">
+            <h2>Game Code:</h2>
+            <div class="game-code"><%= gameCode %></div>
+            <p class="game-code-instruction">Players can join at <strong>kahoot.example.com/quiz/join</strong></p>
+        </div>
+    </div>
+    
+    <div class="joining-methods">
+        <div class="join-method">
+            <h3><i class="fas fa-keyboard"></i> By Game Code:</h3>
+            <p>Players enter the 4-digit code above</p>
+        </div>
+        <div class="join-method">
+            <h3><i class="fas fa-link"></i> By Direct Link:</h3>
+            <div class="host-id-container">
+                <input type="text" id="hostIdInput" class="host-id-input" value="<%= hostId %>" readonly>
+                <button id="copyHostId" class="btn-copy" title="Copy Host ID">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            <p class="copy-feedback" id="copyFeedback">Click to copy Host ID</p>
+        </div>
+    </div>
+    
+    <div class="players-section">
+        <h3>Players <span id="playerCount">0</span></h3>
+        <div class="player-list" id="playerList">
+            <div class="no-players-message">
+                Waiting for players to join...
+            </div>
+        </div>
+    </div>
+    
+    <div class="host-controls">
+        <button id="startGameBtn" class="btn-primary btn-start-game" disabled>
+            <i class="fas fa-play"></i> Start Game (<span id="playerRequiredCount">0</span>/2 players)
+        </button>
+    </div>
+</div>
+
+<div class="game-area" style="display: none;">
+    <div class="game-header">
+        <h2 id="questionText"></h2>
+        <div class="game-info">
+            <span class="question-counter">Question <span id="currentQuestion">1</span>/<span id="totalQuestions"><%= quiz.questions.length %></span></span>
+        </div>
+        <div class="timer-container">
+            <div class="timer-bar" id="timerBar"></div>
+            <div class="timer-text" id="timerText">30</div>
+        </div>
+    </div>
+    
+    <div class="answer-distribution" id="answerDistribution">
+        <div class="answer-option" data-option="0">
+            <div class="answer-bar" id="answerBar0">
+                <div class="answer-count" id="answerCount0">0</div>
+            </div>
+            <div class="answer-label">Option A</div>
+        </div>
+        <div class="answer-option" data-option="1">
+            <div class="answer-bar" id="answerBar1">
+                <div class="answer-count" id="answerCount1">0</div>
+            </div>
+            <div class="answer-label">Option B</div>
+        </div>
+        <div class="answer-option" data-option="2">
+            <div class="answer-bar" id="answerBar2">
+                <div class="answer-count" id="answerCount2">0</div>
+            </div>
+            <div class="answer-label">Option C</div>
+        </div>
+        <div class="answer-option" data-option="3">
+            <div class="answer-bar" id="answerBar3">
+                <div class="answer-count" id="answerCount3">0</div>
+            </div>
+            <div class="answer-label">Option D</div>
+        </div>
+    </div>
+    
+    <div class="game-controls">
+        <button id="nextQuestionBtn" class="btn-primary btn-next-question" style="display: none;">
+            <i class="fas fa-arrow-right"></i> Next Question
+        </button>
+        <button id="showResultsBtn" class="btn-primary btn-show-results" style="display: none;">
+            <i class="fas fa-trophy"></i> Show Results
+        </button>
+    </div>
+</div>
+
+<div id="resultsScreen" class="results-screen" style="display: none;">
+    <h2>Final Results</h2>
+    
+    <div class="podium">
+        <div class="podium-spot" id="secondPlace">
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <div class="player-name">-</div>
+            <div class="player-score">-</div>
+            <div class="place-number">2nd</div>
+        </div>
+        <div class="podium-spot" id="firstPlace">
+            <div class="crown"><i class="fas fa-crown"></i></div>
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <div class="player-name">-</div>
+            <div class="player-score">-</div>
+            <div class="place-number">1st</div>
+        </div>
+        <div class="podium-spot" id="thirdPlace">
+            <div class="avatar"><i class="fas fa-user"></i></div>
+            <div class="player-name">-</div>
+            <div class="player-score">-</div>
+            <div class="place-number">3rd</div>
+        </div>
+    </div>
+    
+    <div class="results-table-container">
+        <h3>All Players</h3>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Score</th>
+                    <th>Correct</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTableBody">
+                <!-- Results will be populated here -->
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="results-actions">
+        <button id="playAgainBtn" class="btn-primary">
+            <i class="fas fa-redo"></i> Play Again
+        </button>
+        <a href="/profile" class="btn-secondary">
+            <i class="fas fa-home"></i> Back to Profile
+        </a>
+    </div>
+</div>
+
+<!-- Question Data (hidden) -->
+<div id="quizData" style="display: none;" data-quiz="<%= JSON.stringify(quiz) %>"></div>
+
+<style>
+    .host-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .host-header {
+        background-color: var(--kahoot-purple);
+        padding: 20px;
+        border-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    
+    .host-header h1 {
+        margin: 0;
+        color: white;
+    }
+    
+    .game-code-section {
+        background-color: var(--dark-card-bg);
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .game-code-display h2 {
+        margin-top: 0;
+        color: white;
+    }
+    
+    .game-code {
+        font-size: 4rem;
+        font-weight: bold;
+        letter-spacing: 10px;
+        color: var(--kahoot-light-purple);
+        margin: 20px 0;
+        text-shadow: 0 0 10px rgba(142, 82, 245, 0.5);
+        animation: pulse 2s infinite;
+    }
+    
+    .game-code-instruction {
+        color: var(--dark-text-secondary);
+        margin-bottom: 0;
+    }
+    
+    .joining-methods {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .join-method {
+        background-color: var(--dark-card-bg);
+        padding: 15px;
+        border-radius: 12px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .join-method h3 {
+        margin-top: 0;
+        color: white;
+        font-size: 1.1rem;
+    }
+    
+    .join-method p {
+        color: var(--dark-text-secondary);
+        margin-bottom: 0;
+    }
+    
+    .host-id-container {
+        display: flex;
+        margin-top: 10px;
+    }
+    
+    .host-id-input {
+        flex: 1;
+        background-color: var(--dark-input-bg);
+        border: 1px solid var(--dark-border);
+        color: var(--kahoot-light-purple);
+        padding: 8px;
+        border-radius: 4px 0 0 4px;
+        font-family: monospace;
+    }
+    
+    .btn-copy {
+        background-color: var(--kahoot-blue);
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 0 4px 4px 0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-copy:hover {
+        background-color: #0e56e0;
+    }
+    
+    .copy-feedback {
+        font-size: 0.8rem;
+        margin-top: 5px;
+        color: var(--dark-text-secondary);
+    }
+    
+    .players-section {
+        background-color: var(--dark-card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .players-section h3 {
+        margin-top: 0;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .player-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .player-item {
+        background-color: var(--dark-secondary-bg);
+        padding: 10px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        animation: fadeIn 0.3s;
+    }
+    
+    .player-avatar {
+        width: 30px;
+        height: 30px;
+        background-color: var(--kahoot-light-purple);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        color: white;
+        font-size: 0.8rem;
+    }
+    
+    .player-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: var(--dark-text);
+    }
+    
+    .no-players-message {
+        text-align: center;
+        color: var(--dark-text-secondary);
+        padding: 20px;
+        grid-column: 1 / -1;
+    }
+    
+    .host-controls {
+        display: flex;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .btn-start-game {
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        transition: all 0.3s;
+    }
+    
+    .btn-start-game:disabled {
+        background-color: var(--dark-hover);
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .game-area {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .game-header {
+        background-color: var(--dark-card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .game-header h2 {
+        margin-top: 0;
+        color: white;
+        font-size: 1.8rem;
+        text-align: center;
+    }
+    
+    .game-info {
+        display: flex;
+        justify-content: space-between;
+        margin: 15px 0;
+        color: var(--dark-text-secondary);
+    }
+    
+    .timer-container {
+        width: 100%;
+        height: 10px;
+        background-color: #444;
+        border-radius: 5px;
+        margin-top: 15px;
+        position: relative;
+    }
+    
+    .timer-bar {
+        height: 100%;
+        background-color: var(--kahoot-light-purple);
+        border-radius: 5px;
+        transition: width 1s linear;
+    }
+    
+    .timer-text {
+        position: absolute;
+        right: 0;
+        top: -25px;
+        color: var(--dark-text-secondary);
+    }
+    
+    .answer-distribution {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .answer-option {
+        background-color: var(--dark-card-bg);
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    .answer-bar {
+        height: 30px;
+        background-color: #444;
+        border-radius: 4px;
+        margin-bottom: 8px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .answer-bar::before {
+        content: '';
+        position: absolute;
+        height: 100%;
+        width: 0%;
+        background-color: var(--kahoot-green);
+        transition: width 1s;
+    }
+    
+    .answer-count {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: white;
+        font-weight: bold;
+        z-index: 2;
+    }
+    
+    .answer-label {
+        color: var(--dark-text-secondary);
+        font-size: 0.9rem;
+    }
+    
+    .game-controls {
+        display: flex;
+        justify-content: center;
+        margin-top: 30px;
+    }
+    
+    .btn-next-question, .btn-show-results {
+        font-size: 1.2rem;
+        padding: 15px 30px;
+    }
+    
+    .results-screen {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        text-align: center;
+    }
+    
+    .results-screen h2 {
+        color: white;
+        margin-bottom: 30px;
+        font-size: 2rem;
+    }
+    
+    .podium {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        margin-bottom: 40px;
+    }
+    
+    .podium-spot {
+        width: 150px;
+        padding: 15px;
+        text-align: center;
+        position: relative;
+    }
+    
+    #firstPlace {
+        background-color: var(--kahoot-purple);
+        border-radius: 8px 8px 0 0;
+        height: 250px;
+        margin: 0 10px;
+        z-index: 3;
+    }
+    
+    #secondPlace {
+        background-color: var(--dark-secondary-bg);
+        border-radius: 8px 8px 0 0;
+        height: 200px;
+        z-index: 2;
+    }
+    
+    #thirdPlace {
+        background-color: var(--dark-secondary-bg);
+        border-radius: 8px 8px 0 0;
+        height: 150px;
+        z-index: 1;
+    }
+    
+    .crown {
+        color: gold;
+        font-size: 2rem;
+        position: absolute;
+        top: -25px;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: floatAnim 3s infinite;
+    }
+    
+    .avatar {
+        width: 60px;
+        height: 60px;
+        background-color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 10px auto;
+        color: #333;
+        font-size: 1.8rem;
+    }
+    
+    .player-name {
+        color: white;
+        font-weight: bold;
+        margin: 5px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .player-score {
+        color: white;
+        opacity: 0.8;
+    }
+    
+    .place-number {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        right: 0;
+        font-weight: bold;
+        color: white;
+    }
+    
+    .results-table-container {
+        background-color: var(--dark-card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .results-table-container h3 {
+        margin-top: 0;
+        color: white;
+    }
+    
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .results-table th, .results-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid var(--dark-border);
+    }
+    
+    .results-table th {
+        color: var(--dark-text-secondary);
+    }
+    
+    .results-table td {
+        color: var(--dark-text);
+    }
+    
+    .results-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes floatAnim {
+        0% { transform: translateX(-50%) translateY(0); }
+        50% { transform: translateX(-50%) translateY(-10px); }
+        100% { transform: translateX(-50%) translateY(0); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (max-width: 768px) {
+        .podium {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        #firstPlace, #secondPlace, #thirdPlace {
+            width: 80%;
+            height: auto;
+            margin: 10px 0;
+            padding-bottom: 30px;
+        }
+        
+        .answer-distribution {
+            grid-template-columns: 1fr;
+        }
+        
+        .joining-methods {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add copy functionality for host ID
+        const copyBtn = document.getElementById('copyHostId');
+        const hostIdInput = document.getElementById('hostIdInput');
+        const copyFeedback = document.getElementById('copyFeedback');
+        
+        copyBtn.addEventListener('click', function() {
+            hostIdInput.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            copyFeedback.textContent = 'Host ID copied!';
+            copyFeedback.style.color = 'var(--kahoot-green)';
+            
+            setTimeout(() => {
+                copyFeedback.textContent = 'Click to copy Host ID';
+                copyFeedback.style.color = 'var(--dark-text-secondary)';
+            }, 2000);
+        });
+
+        // Socket.io connection
+        const socket = io();
+        
+        // Game data from server
+        const gameCode = '<%= gameCode %>';
+        const hostId = '<%= hostId %>';
+        const quizData = JSON.parse(document.getElementById('quizData').dataset.quiz);
+        
+        // DOM elements
+        const playerList = document.getElementById('playerList');
+        const playerCount = document.getElementById('playerCount');
+        const playerRequiredCount = document.getElementById('playerRequiredCount');
+        const startGameBtn = document.getElementById('startGameBtn');
+        
+        // Game hosting elements
+        const hostContainer = document.querySelector('.host-container');
+        const gameArea = document.querySelector('.game-area');
+        const resultsScreen = document.getElementById('resultsScreen');
+        const questionText = document.getElementById('questionText');
+        const currentQuestion = document.getElementById('currentQuestion');
+        const timerBar = document.getElementById('timerBar');
+        const timerText = document.getElementById('timerText');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const showResultsBtn = document.getElementById('showResultsBtn');
+        
+        // State variables
+        let players = [];
+        let gameState = 'waiting'; // waiting, playing, finished
+        let currentQuestionIndex = 0;
+        let timer = null;
+        let timeLeft = 0;
+        
+        // Create game room
+        socket.emit('create-game', {
+            gameCode,
+            hostId,
+            quiz: quizData
+        });
+        
+        // Listen for player joining
+        socket.on('player-joined', (player) => {
+            console.log('Player joined:', player);
+            players.push(player);
+            addPlayerToUI(player);
+            updatePlayerCount();
+            
+            // Play sound effect
+            playSound('/sounds/player-joined.mp3');
+        });
+        
+        // Listen for player leaving
+        socket.on('player-left', ({ playerId, playerName }) => {
+            console.log('Player left:', playerId);
+            
+            // Remove from players array
+            const playerIndex = players.findIndex(p => p.id === playerId);
+            if (playerIndex !== -1) {
+                players.splice(playerIndex, 1);
+            }
+            
+            // Remove from UI
+            const playerElement = playerList.querySelector(`[data-player-id="${playerId}"]`);
+            if (playerElement) {
+                playerElement.classList.add('player-leaving');
+                setTimeout(() => {
+                    playerElement.remove();
+                }, 300);
+            }
+            
+            updatePlayerCount();
+        });
+        
+        // Listen for player answers
+        socket.on('player-answered', ({ playerId, playerName, questionIndex, answerIndex, isCorrect }) => {
+            console.log(`${playerName} answered question ${questionIndex}, answer: ${answerIndex}, correct: ${isCorrect}`);
+            
+            // Update UI to show player answered
+            updateAnswerDistribution();
+            
+            // Play sound effect based on correct/incorrect
+            if (isCorrect) {
+                playSound('/sounds/correct-answer.mp3');
+            }
+        });
+        
+        function addPlayerToUI(player) {
+            // Remove "no players" message if present
+            const noPlayersMsg = playerList.querySelector('.no-players-message');
+            if (noPlayersMsg) {
+                noPlayersMsg.remove();
+            }
+            
+            const playerItem = document.createElement('div');
+            playerItem.className = 'player-item';
+            playerItem.dataset.playerId = player.id;
+            
+            const initials = player.name.substring(0, 2).toUpperCase();
+            
+            playerItem.innerHTML = `
+                <div class="player-avatar">${initials}</div>
+                <div class="player-name">${player.name}</div>
+            `;
+            
+            playerList.appendChild(playerItem);
+        }
+        
+        function updatePlayerCount() {
+            playerCount.textContent = players.length;
+            playerRequiredCount.textContent = players.length;
+            
+            // Enable start button if we have at least 1 player
+            if (players.length >= 1) {
+                startGameBtn.disabled = false;
+            } else {
+                startGameBtn.disabled = true;
+            }
+        }
+        
+        // Game controls
+        startGameBtn.addEventListener('click', startGame);
+        nextQuestionBtn.addEventListener('click', nextQuestion);
+        showResultsBtn.addEventListener('click', showResults);
+        document.getElementById('playAgainBtn').addEventListener('click', playAgain);
+        
+        function startGame() {
+            gameState = 'playing';
+            
+            // Notify all players that game is starting
+            socket.emit('start-game', { gameCode });
+            
+            // Hide lobby, show game area
+            hostContainer.style.display = 'none';
+            gameArea.style.display = 'block';
+            
+            // Reset game state
+            currentQuestionIndex = 0;
+            players.forEach(p => {
+                p.score = 0;
+                p.answers = [];
+            });
+            
+            // Start first question
+            loadQuestion(currentQuestionIndex);
+        }
+        
+        function loadQuestion(index) {
+            // Get current question
+            const question = quizData.questions[index];
+            
+            // Notify players about new question
+            socket.emit('next-question', {
+                gameCode,
+                questionIndex: index
+            });
+            
+            // Update UI
+            questionText.textContent = question.questionText;
+            currentQuestion.textContent = index + 1;
+            
+            // Reset answer counts
+            for (let i = 0; i < 4; i++) {
+                const answerBar = document.getElementById(`answerBar${i}`);
+                const answerCount = document.getElementById(`answerCount${i}`);
+                
+                if (answerBar) {
+                    answerBar.style.setProperty('--width', '0%');
+                    answerBar.style.border = 'none';
+                    answerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-${getColorForOption(i)}) 0%, #444 0%)`;
+                }
+                
+                if (answerCount) {
+                    answerCount.textContent = '0';
+                }
+            }
+            
+            // Hide next/results buttons
+            nextQuestionBtn.style.display = 'none';
+            showResultsBtn.style.display = 'none';
+            
+            // Start timer
+            timeLeft = question.timeLimit || 30;
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            startTimer();
+        }
+        
+        function startTimer() {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                
+                // Update timer bar width
+                const percentage = (timeLeft / (quizData.questions[currentQuestionIndex].timeLimit || 30)) * 100;
+                timerBar.style.width = `${percentage}%`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    // Time's up, show results for this question
+                    showQuestionResults();
+                }
+            }, 1000);
+        }
+        
+        function updateAnswerDistribution() {
+            // Count answers for the current question
+            const answerCounts = [0, 0, 0, 0];
+            let totalAnswers = 0;
+            
+            players.forEach(player => {
+                const answer = player.answers[currentQuestionIndex];
+                if (answer && answer.answerIndex >= 0 && answer.answerIndex < 4) {
+                    answerCounts[answer.answerIndex]++;
+                    totalAnswers++;
+                }
+            });
+            
+            // Update UI
+            for (let i = 0; i < 4; i++) {
+                const answerBar = document.getElementById(`answerBar${i}`);
+                const answerCount = document.getElementById(`answerCount${i}`);
+                
+                if (answerBar && answerCount) {
+                    const percentage = totalAnswers > 0 ? (answerCounts[i] / totalAnswers) * 100 : 0;
+                    
+                    // Update bar width
+                    answerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-${getColorForOption(i)}) ${percentage}%, #444 ${percentage}%)`;
+                    
+                    answerCount.textContent = answerCounts[i];
+                }
+            }
+        }
+        
+        function getColorForOption(index) {
+            const colors = ['red', 'blue', 'yellow', 'green'];
+            return colors[index % colors.length];
+        }
+        
+        function showQuestionResults() {
+            clearInterval(timer);
+            
+            // Highlight correct options
+            const question = quizData.questions[currentQuestionIndex];
+            for (let i = 0; i < question.options.length && i < 4; i++) {
+                const answerBar = document.getElementById(`answerBar${i}`);
+                if (answerBar) {
+                    if (question.options[i].isCorrect) {
+                        answerBar.style.border = '2px solid var(--kahoot-green)';
+                    }
+                }
+            }
+            
+            // Show next button or results button
+            if (currentQuestionIndex < quizData.questions.length - 1) {
+                nextQuestionBtn.style.display = 'block';
+            } else {
+                showResultsBtn.style.display = 'block';
+            }
+            
+            // Play sound effect
+            playSound('/sounds/question-end.mp3');
+        }
+        
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.questions.length) {
+                loadQuestion(currentQuestionIndex);
+            }
+        }
+        
+        function showResults() {
+            gameState = 'finished';
+            
+            // Sort players by score
+            const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            // Update podium
+            if (sortedPlayers.length > 0) {
+                const firstPlace = document.getElementById('firstPlace');
+                firstPlace.querySelector('.player-name').textContent = sortedPlayers[0].name;
+                firstPlace.querySelector('.player-score').textContent = sortedPlayers[0].score + ' pts';
+            }
+            
+            if (sortedPlayers.length > 1) {
+                const secondPlace = document.getElementById('secondPlace');
+                secondPlace.querySelector('.player-name').textContent = sortedPlayers[1].name;
+                secondPlace.querySelector('.player-score').textContent = sortedPlayers[1].score + ' pts';
+            }
+            
+            if (sortedPlayers.length > 2) {
+                const thirdPlace = document.getElementById('thirdPlace');
+                thirdPlace.querySelector('.player-name').textContent = sortedPlayers[2].name;
+                thirdPlace.querySelector('.player-score').textContent = sortedPlayers[2].score + ' pts';
+            }
+            
+            // Update results table
+            const resultsTableBody = document.getElementById('resultsTableBody');
+            resultsTableBody.innerHTML = '';
+            
+            sortedPlayers.forEach((player, index) => {
+                // Calculate correct answers
+                const correctAnswers = player.answers.filter(a => a && a.isCorrect).length;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${player.name}</td>
+                    <td>${player.score}</td>
+                    <td>${correctAnswers} / ${quizData.questions.length}</td>
+                `;
+                resultsTableBody.appendChild(row);
+            });
+            
+            // Hide game area, show results
+            gameArea.style.display = 'none';
+            resultsScreen.style.display = 'block';
+            
+            // Play victory sound
+            playSound('/sounds/game-end.mp3');
+        }
+        
+        function playAgain() {
+            // Reset game state
+            gameState = 'waiting';
+            currentQuestionIndex = 0;
+            players.forEach(p => {
+                p.score = 0;
+                p.answers = [];
+            });
+            
+            // Show host screen
+            resultsScreen.style.display = 'none';
+            hostContainer.style.display = 'block';
+        }
+        
+        function playSound(url) {
+            try {
+                const audio = new Audio(url);
+                audio.play();
+            } catch (e) {
+                console.log('Sound play error:', e);
+            }
+        }
+    });
+</script>
+
+<%- include('./partials/footer') %>

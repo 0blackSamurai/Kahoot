@@ -1,0 +1,353 @@
+<%- include('./partials/header') %>
+<link rel="stylesheet" href="/css/kahoot-dark.css">
+
+<div class="lobby-container">
+    <div class="lobby-header">
+        <h1>Waiting for host to start the game</h1>
+        <div class="game-code">
+            <span class="code-label">Game Code:</span>
+            <span class="code-value"><%= gameCode %></span>
+        </div>
+    </div>
+    
+    <div class="quiz-info">
+        <h2><%= quiz.title %></h2>
+        <p class="description"><%= quiz.description || 'No description provided.' %></p>
+        <div class="quiz-stats">
+            <div class="stat">
+                <i class="fas fa-question-circle"></i>
+                <span><%= quiz.questions.length %> questions</span>
+            </div>
+            <div class="stat">
+                <i class="fas fa-user"></i>
+                <span id="playerCount"><%= players.length %> players</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="player-area">
+        <h3>Players in the lobby</h3>
+        <div class="player-grid" id="playerGrid">
+            <% players.forEach(function(player) { %>
+                <div class="player-item">
+                    <div class="player-avatar">
+                        <%= player.name.substring(0, 2).toUpperCase() %>
+                    </div>
+                    <div class="player-name"><%= player.name %></div>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+    
+    <div class="lobby-footer">
+        <div class="waiting-animation">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <div class="status-message">Waiting for the host to start the game...</div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: var(--kahoot-bg-purple);
+        background-image: url('/images/kahoot-classroom-bg.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+    }
+    
+    .lobby-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .lobby-header {
+        background-color: var(--kahoot-purple);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .lobby-header h1 {
+        color: white;
+        font-size: 1.8rem;
+        margin: 0 0 15px 0;
+    }
+    
+    .game-code {
+        display: inline-block;
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 10px 20px;
+        border-radius: 8px;
+        color: white;
+    }
+    
+    .code-label {
+        margin-right: 8px;
+        opacity: 0.9;
+    }
+    
+    .code-value {
+        font-size: 1.3rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+    }
+    
+    .quiz-info {
+        background-color: var(--dark-card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .quiz-info h2 {
+        color: white;
+        margin-top: 0;
+        font-size: 1.5rem;
+    }
+    
+    .description {
+        color: var(--dark-text-secondary);
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 15px;
+    }
+    
+    .quiz-stats {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .stat {
+        color: var(--dark-text-secondary);
+        display: flex;
+        align-items: center;
+    }
+    
+    .stat i {
+        margin-right: 8px;
+        color: var(--kahoot-light-purple);
+    }
+    
+    .player-area {
+        background-color: var(--dark-card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .player-area h3 {
+        color: white;
+        margin-top: 0;
+    }
+    
+    .player-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+        margin-top: 15px;
+    }
+    
+    .player-item {
+        background-color: var(--dark-secondary-bg);
+        border-radius: 8px;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        animation: fadeIn 0.3s;
+    }
+    
+    .player-avatar {
+        width: 40px;
+        height: 40px;
+        background-color: var(--kahoot-light-purple);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        color: white;
+        font-size: 1rem;
+        font-weight: bold;
+    }
+    
+    .player-name {
+        color: var(--dark-text);
+        font-size: 0.95rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .lobby-footer {
+        background-color: var(--dark-card-bg);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .waiting-animation {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    
+    .dot {
+        width: 12px;
+        height: 12px;
+        background-color: var(--kahoot-light-purple);
+        border-radius: 50%;
+        margin: 0 6px;
+        animation: bounce 1.5s infinite ease-in-out;
+    }
+    
+    .dot:nth-child(1) {
+        animation-delay: 0s;
+    }
+    
+    .dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    .status-message {
+        color: var(--dark-text-secondary);
+    }
+    
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Add some styles for game starting animation */
+    @keyframes gameStarting {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    
+    .game-starting {
+        animation: gameStarting 0.5s infinite;
+    }
+    
+    .success {
+        color: var(--kahoot-green);
+        font-weight: bold;
+    }
+    
+    .error {
+        color: var(--kahoot-red);
+        font-weight: bold;
+    }
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Socket.io connection
+        const socket = io();
+        
+        // Game data
+        const gameCode = '<%= gameCode %>';
+        const player = {
+            id: '<%= locals.userId || "guest_" + Date.now() %>',
+            name: '<%= locals.username || players[players.length - 1].name %>'
+        };
+        
+        // DOM elements
+        const playerGrid = document.getElementById('playerGrid');
+        const playerCount = document.getElementById('playerCount');
+        const statusMessage = document.querySelector('.status-message');
+        
+        // Connect to game
+        socket.emit('join-game', {
+            gameCode,
+            playerName: player.name,
+            playerId: player.id
+        });
+        
+        // Handle join success
+        socket.on('join-success', ({ gameCode, playerName, quizTitle }) => {
+            console.log('Successfully joined game:', gameCode);
+            statusMessage.innerHTML = `You've joined as <strong>${playerName}</strong>. Waiting for the host to start the game...`;
+        });
+        
+        // Handle join failure
+        socket.on('join-failed', ({ message }) => {
+            console.error('Failed to join game:', message);
+            statusMessage.innerHTML = `<span class="error">${message}</span><br>
+                <a href="/quiz/join" class="btn-secondary">Try Another Game</a>`;
+        });
+        
+        // Update player list when new players join
+        socket.on('player-list-update', ({ players }) => {
+            updatePlayerGrid(players);
+        });
+        
+        // Handle when a game starts
+        socket.on('game-started', () => {
+            statusMessage.innerHTML = `<span class="success">Game is starting!</span>`;
+            
+            // Add animation to indicate game is starting
+            document.querySelector('.lobby-container').classList.add('game-starting');
+            
+            // Redirect to the game play page
+            setTimeout(() => {
+                window.location.href = `/quiz/play/${gameCode}`;
+            }, 1500);
+        });
+        
+        // Handle when host disconnects
+        socket.on('host-disconnected', () => {
+            statusMessage.innerHTML = `<span class="error">The host has disconnected. This game has ended.</span><br>
+                <a href="/quiz/join" class="btn-secondary">Join Another Game</a>`;
+        });
+        
+        function updatePlayerGrid(players) {
+            // Update player count
+            playerCount.textContent = players.length;
+            
+            // Clear grid
+            playerGrid.innerHTML = '';
+            
+            // Add players to grid
+            players.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                playerItem.dataset.playerId = player.id;
+                
+                const initials = player.name.substring(0, 2).toUpperCase();
+                
+                playerItem.innerHTML = `
+                    <div class="player-avatar">
+                        ${initials}
+                    </div>
+                    <div class="player-name">${player.name}</div>
+                `;
+                
+                playerGrid.appendChild(playerItem);
+            });
+        }
+    });
+</script>
+
+<%- include('./partials/footer') %>

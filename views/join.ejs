@@ -1,0 +1,591 @@
+<%- include('./partials/header') %>
+<link rel="stylesheet" href="/css/kahoot-dark.css">
+
+<div class="join-container">
+    <div class="join-card">
+        <h1 class="join-title">Join a Quiz!</h1>
+        
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="error-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <%= error %>
+            </div>
+        <% } %>
+        
+        <div class="join-tabs">
+            <button class="tab-btn active" data-tab="game-code">Game Code</button>
+            <button class="tab-btn" data-tab="public-games">Browse Public Games</button>
+        </div>
+        
+        <div class="tab-content" id="game-code-tab">
+            <form action="/quiz/join" method="POST" class="join-form">
+                <div class="form-group code-input-group">
+                    <label for="gameCode">Enter Game Code:</label>
+                    <input type="text" id="gameCode" name="gameCode" class="game-code-input" 
+                          placeholder="XXXX" maxlength="4" autocomplete="off" autofocus required>
+                </div>
+                
+                <% if (!locals.isAuthenticated) { %>
+                    <div class="form-group">
+                        <label for="playerName">Your Nickname:</label>
+                        <input type="text" id="playerName" name="playerName" class="form-control"
+                              placeholder="Enter your nickname" maxlength="15" required>
+                    </div>
+                <% } %>
+                
+                <button type="submit" class="btn-join">
+                    <i class="fas fa-sign-in-alt"></i> Join Game
+                </button>
+            </form>
+        </div>
+        
+        <div class="tab-content" id="public-games-tab" style="display:none">
+            <div class="public-games-container">
+                <div class="games-list-header">
+                    <h3>Available Public Games</h3>
+                    <button id="refreshGamesBtn" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                
+                <div id="gamesList" class="games-list">
+                    <div class="loading-games">
+                        <div class="spinner"></div>
+                        <p>Loading available games...</p>
+                    </div>
+                </div>
+                
+                <div id="noGamesMessage" class="no-games-message" style="display:none">
+                    <i class="fas fa-info-circle"></i>
+                    <p>No active public games found.</p>
+                    <button id="createGameBtn" class="btn-create-game">
+                        <i class="fas fa-plus"></i> Create Your Own Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="join-info">
+            <p>No game code? <a href="/">Go to Home</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: var(--kahoot-bg-purple);
+        background-image: url('/images/kahoot-classroom-bg.jpg');
+        background-size: cover;
+        background-attachment: fixed;
+        min-height: 100vh;
+        display: block;
+    }
+    
+    .join-container {
+        width: 100%;
+        max-width: 500px;
+        padding: 20px;
+        margin: 40px auto 80px;
+    }
+    
+    .join-card {
+        background-color: rgba(30, 30, 30, 0.9);
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(5px);
+    }
+    
+    .join-title {
+        text-align: center;
+        color: white;
+        font-size: 2.5rem;
+        margin-bottom: 30px;
+    }
+    
+    .error-message {
+        background-color: rgba(226, 27, 60, 0.2);
+        color: #ff6b6b;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .error-message i {
+        margin-right: 10px;
+    }
+    
+    .join-tabs {
+        display: flex;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .tab-btn {
+        background: none;
+        border: none;
+        color: var(--dark-text-secondary);
+        padding: 10px 15px;
+        font-size: 1rem;
+        cursor: pointer;
+        position: relative;
+        flex: 1;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .tab-btn:hover {
+        color: white;
+    }
+    
+    .tab-btn.active {
+        color: var(--kahoot-light-purple);
+    }
+    
+    .tab-btn.active:after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: var(--kahoot-light-purple);
+    }
+    
+    .join-form {
+        margin-bottom: 20px;
+    }
+    
+    .code-input-group label {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        color: white;
+        text-align: center;
+        display: block;
+    }
+    
+    .game-code-input {
+        width: 100%;
+        font-size: 2.5rem;
+        letter-spacing: 12px;
+        text-align: center;
+        padding: 15px;
+        border-radius: 8px;
+        border: 2px solid var(--kahoot-light-purple);
+        background-color: var(--dark-input-bg);
+        color: white;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
+    
+    .game-code-input:focus {
+        outline: none;
+        border-color: var(--kahoot-green);
+        box-shadow: 0 0 0 2px rgba(38, 137, 12, 0.4);
+    }
+    
+    .btn-join {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.2rem;
+        border-radius: 8px;
+        background-color: var(--kahoot-green);
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: all 0.2s;
+    }
+    
+    .btn-join:hover {
+        background-color: #2ca20e;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(38, 137, 12, 0.4);
+    }
+    
+    .join-info {
+        text-align: center;
+        color: var(--dark-text-secondary);
+        margin-top: 20px;
+    }
+    
+    .join-info a {
+        color: var(--kahoot-light-purple);
+        text-decoration: none;
+    }
+    
+    .join-info a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Public Games Tab Styles */
+    .public-games-container {
+        max-height: 400px;
+        overflow-y: auto;
+        background-color: rgba(20, 20, 20, 0.5);
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .games-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: sticky;
+        top: 0;
+        background-color: rgba(30, 30, 30, 0.9);
+        z-index: 2;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .games-list-header h3 {
+        color: white;
+        margin: 0;
+        font-size: 1.1rem;
+    }
+    
+    .btn-refresh {
+        background: none;
+        border: none;
+        color: var(--kahoot-light-purple);
+        cursor: pointer;
+        padding: 5px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-refresh:hover {
+        background-color: rgba(142, 82, 245, 0.2);
+    }
+    
+    .btn-refresh i {
+        transition: transform 0.5s;
+    }
+    
+    .btn-refresh.loading i {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .games-list {
+        padding: 10px;
+    }
+    
+    .game-item {
+        background-color: rgba(40, 40, 40, 0.8);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+        cursor: pointer;
+        animation: fadeIn 0.3s;
+    }
+    
+    .game-item:hover {
+        background-color: rgba(50, 50, 50, 0.9);
+        transform: translateY(-2px);
+    }
+    
+    .game-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .game-title {
+        color: white;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+    
+    .game-code-label {
+        background-color: var(--kahoot-light-purple);
+        color: white;
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .game-details {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        color: var(--dark-text-secondary);
+    }
+    
+    .game-host {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .game-players {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .game-join {
+        margin-top: 10px;
+        text-align: right;
+    }
+    
+    .btn-join-game {
+        background-color: var(--kahoot-green);
+        color: white;
+        border: none;
+        padding: 5px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-join-game:hover {
+        background-color: #2ca20e;
+        transform: translateY(-1px);
+    }
+    
+    .loading-games {
+        text-align: center;
+        padding: 30px 10px;
+        color: var(--dark-text-secondary);
+    }
+    
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid rgba(142, 82, 245, 0.3);
+        border-top-color: var(--kahoot-light-purple);
+        border-radius: 50%;
+        margin: 0 auto 15px;
+        animation: spinner 1s linear infinite;
+    }
+    
+    @keyframes spinner {
+        to { transform: rotate(360deg); }
+    }
+    
+    .no-games-message {
+        text-align: center;
+        padding: 30px 10px;
+        color: var(--dark-text-secondary);
+    }
+    
+    .no-games-message i {
+        font-size: 2rem;
+        color: var(--kahoot-light-purple);
+        margin-bottom: 15px;
+    }
+    
+    .no-games-message p {
+        margin-bottom: 15px;
+    }
+    
+    .btn-create-game {
+        background-color: var(--kahoot-blue);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-create-game:hover {
+        background-color: #3069f0;
+        transform: translateY(-2px);
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Make the game code input nicer on mobile */
+    @media (max-width: 500px) {
+        .game-code-input {
+            font-size: 2rem;
+            letter-spacing: 8px;
+        }
+        
+        .join-card {
+            padding: 20px;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const codeInput = document.getElementById('gameCode');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const refreshGamesBtn = document.getElementById('refreshGamesBtn');
+        const gamesList = document.getElementById('gamesList');
+        const noGamesMessage = document.getElementById('noGamesMessage');
+        const createGameBtn = document.getElementById('createGameBtn');
+        
+        // Tab switching
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all tabs
+                tabBtns.forEach(b => b.classList.remove('active'));
+                
+                // Hide all tab content
+                tabContents.forEach(content => content.style.display = 'none');
+                
+                // Add active class to clicked tab
+                this.classList.add('active');
+                
+                // Show corresponding tab content
+                const tabId = this.dataset.tab + '-tab';
+                document.getElementById(tabId).style.display = 'block';
+                
+                // If switching to public games tab, fetch games
+                if (this.dataset.tab === 'public-games') {
+                    fetchPublicGames();
+                } else {
+                    // Focus on the game code input when switching to that tab
+                    codeInput.focus();
+                }
+            });
+        });
+        
+        // Auto-format game code: uppercase and no spaces
+        if (codeInput) {
+            codeInput.addEventListener('input', function() {
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+            });
+            
+            // Auto-submit when 4 characters are entered for game code
+            codeInput.addEventListener('keyup', function() {
+                if (this.value.length === 4) {
+                    const playerNameInput = document.getElementById('playerName');
+                    if (!playerNameInput || playerNameInput.value.trim().length > 0) {
+                        setTimeout(() => {
+                            this.form.submit();
+                        }, 300);
+                    } else {
+                        playerNameInput.focus();
+                    }
+                }
+            });
+        }
+        
+        // Fetch public games
+        function fetchPublicGames() {
+            // Show loading state
+            gamesList.innerHTML = `
+                <div class="loading-games">
+                    <div class="spinner"></div>
+                    <p>Loading available games...</p>
+                </div>
+            `;
+            
+            refreshGamesBtn.classList.add('loading');
+            
+            // Fetch the games from the server
+            fetch('/quiz/public-games')
+                .then(response => response.json())
+                .then(data => {
+                    // Remove loading state
+                    refreshGamesBtn.classList.remove('loading');
+                    
+                    if (data.games && data.games.length > 0) {
+                        // Show the games list
+                        gamesList.innerHTML = '';
+                        noGamesMessage.style.display = 'none';
+                        
+                        // Create a list item for each game
+                        data.games.forEach(game => {
+                            const gameItem = document.createElement('div');
+                            gameItem.className = 'game-item';
+                            gameItem.innerHTML = `
+                                <div class="game-item-header">
+                                    <h4 class="game-title">${game.title}</h4>
+                                    <span class="game-code-label">${game.gameCode}</span>
+                                </div>
+                                <div class="game-details">
+                                    <div class="game-host">
+                                        <i class="fas fa-user"></i> ${game.hostName || 'Anonymous'}
+                                    </div>
+                                    <div class="game-players">
+                                        <i class="fas fa-users"></i> ${game.players.length} players
+                                    </div>
+                                </div>
+                                <div class="game-join">
+                                    <button class="btn-join-game" data-code="${game.gameCode}">
+                                        <i class="fas fa-sign-in-alt"></i> Join
+                                    </button>
+                                </div>
+                            `;
+                            
+                            gamesList.appendChild(gameItem);
+                            
+                            // Add click event to join button
+                            const joinBtn = gameItem.querySelector('.btn-join-game');
+                            joinBtn.addEventListener('click', function() {
+                                const gameCode = this.dataset.code;
+                                codeInput.value = gameCode;
+                                document.querySelector('form.join-form').submit();
+                            });
+                        });
+                    } else {
+                        // Show no games message
+                        gamesList.innerHTML = '';
+                        noGamesMessage.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching games:', error);
+                    refreshGamesBtn.classList.remove('loading');
+                    
+                    // Show error message
+                    gamesList.innerHTML = `
+                        <div class="no-games-message">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Failed to load games. Please try again.</p>
+                            <button class="btn-join-game" onclick="fetchPublicGames()">
+                                <i class="fas fa-sync-alt"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Refresh games when button is clicked
+        if (refreshGamesBtn) {
+            refreshGamesBtn.addEventListener('click', fetchPublicGames);
+        }
+        
+        // Create game button action
+        if (createGameBtn) {
+            createGameBtn.addEventListener('click', function() {
+                window.location.href = '/quiz/create';
+            });
+        }
+    });
+</script>
+
+<%- include('./partials/footer') %>

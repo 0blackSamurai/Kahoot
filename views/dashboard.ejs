@@ -1,0 +1,1462 @@
+<%- include('./partials/header') %>
+<link rel="stylesheet" href="/css/kahoot-dark.css">
+
+<div class="dashboard-container">
+    <!-- Sidebar Navigation -->
+    <div class="dashboard-sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-cogs"></i> Admin Panel</h2>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#overview" class="nav-link active" data-section="overview">
+                <i class="fas fa-tachometer-alt"></i> Dashboard Overview
+            </a>
+            <a href="#users" class="nav-link" data-section="users">
+                <i class="fas fa-users"></i> User Management
+            </a>
+            <a href="#quizzes" class="nav-link" data-section="quizzes">
+                <i class="fas fa-question-circle"></i> Quiz Management
+            </a>
+            <a href="#settings" class="nav-link" data-section="settings">
+                <i class="fas fa-cog"></i> System Settings
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <a href="/" class="return-link">
+                <i class="fas fa-arrow-left"></i> Return to Site
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="dashboard-content">
+        <!-- Overview Section -->
+        <section id="overview" class="dashboard-section active">
+            <div class="section-header">
+                <h1>Dashboard Overview</h1>
+                <div class="date-display" id="currentDate"></div>
+            </div>
+            
+            <div class="data-loading" id="loadingStats">
+                <div class="spinner"></div>
+                <p>Loading statistics...</p>
+            </div>
+            
+            <div class="stats-container" id="statsContainer" style="display:none;">
+                <div class="stat-card">
+                    <div class="stat-icon users">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Users</h3>
+                        <div class="stat-value" id="userCount">0</div>
+                        <div class="stat-change" id="userChange">
+                            <span>updated just now</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon quizzes">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Total Quizzes</h3>
+                        <div class="stat-value" id="quizCount">0</div>
+                        <div class="stat-change" id="quizChange">
+                            <span>updated just now</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon played">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Public Quizzes</h3>
+                        <div class="stat-value" id="publicQuizCount">0</div>
+                        <div class="stat-change" id="publicQuizPercent">
+                            <span>of all quizzes</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon online">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Admin Users</h3>
+                        <div class="stat-value" id="adminCount">0</div>
+                        <div class="stat-change" id="adminPercent">
+                            <span>of all users</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <!-- <h3>User Distribution</h3>
+                        <div class="chart-actions">
+                            <button class="btn-refresh" id="refreshUserChart">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div> -->
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="userChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <!-- <h3>Quiz Categories</h3>
+                        <div class="chart-actions">
+                            <button class="btn-refresh" id="refreshCategoryChart">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div> -->
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="categoriesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h2>Recent Activity</h2>
+                
+                <div class="activity-list" id="activityList">
+                    <div class="data-loading">
+                        <div class="spinner"></div>
+                        <p>Loading recent activity...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- User Management Section -->
+        <section id="users" class="dashboard-section">
+            <div class="section-header">
+                <h1>User Management</h1>
+            </div>
+            
+            <div class="search-filters">
+                <div class="search-box">
+                    <input type="text" placeholder="Search users..." id="userSearch">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="filter-options">
+                    <select id="roleFilter">
+                        <option value="">All Roles</option>
+                        <option value="Admin">Admin</option>
+                        <option value="User">User</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="data-loading" id="loadingUsers">
+                    <div class="spinner"></div>
+                    <p>Loading user data...</p>
+                </div>
+                
+                <table class="data-table" id="usersTable" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="usersPagination">
+                <!-- Will be populated dynamically -->
+            </div>
+        </section>
+        
+        <!-- Quiz Management Section -->
+        <section id="quizzes" class="dashboard-section">
+            <div class="section-header">
+                <h1>Quiz Management</h1>
+                <div class="section-actions">
+                    <button class="btn-secondary btn-export" id="exportQuizzes">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <a href="/quiz/create" class="btn-primary btn-add-quiz">
+                        <i class="fas fa-plus"></i> Add Quiz
+                    </a>
+                </div>
+            </div>
+            
+            <div class="search-filters">
+                <div class="search-box">
+                    <input type="text" placeholder="Search quizzes..." id="quizSearch">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="filter-options">
+                    <select id="visibilityFilter">
+                        <option value="">All Visibility</option>
+                        <option value="public">Public</option>
+                        <option value="private">Private</option>
+                    </select>
+                    <button id="refreshQuizzes" class="btn-refresh">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="data-table-container">
+                <div class="data-loading" id="loadingQuizzes">
+                    <div class="spinner"></div>
+                    <p>Loading quiz data...</p>
+                </div>
+                
+                <table class="data-table" id="quizzesTable" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Creator</th>
+                            <th>Questions</th>
+                            <th>Visibility</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quizzesTableBody">
+                        <!-- Will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="quizzesPagination">
+                <!-- Will be populated dynamically -->
+            </div>
+        </section>
+        
+        <!-- Settings Section -->
+        <section id="settings" class="dashboard-section">
+            <div class="section-header">
+                <h1>System Settings</h1>
+            </div>
+            
+            <div class="settings-container">
+                <div class="settings-card">
+                    <h3>General Settings</h3>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="siteName">Site Name</label>
+                            <input type="text" id="siteName" value="Quizzify" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="siteDesc">Site Description</label>
+                            <textarea id="siteDesc" class="form-control">An interactive quiz platform for education and fun!</textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="timeZone">Default Time Zone</label>
+                            <select id="timeZone" class="form-control">
+                                <option value="utc">UTC</option>
+                                <option value="est" selected>Eastern Time (UTC-5)</option>
+                                <option value="cst">Central Time (UTC-6)</option>
+                                <option value="mst">Mountain Time (UTC-7)</option>
+                                <option value="pst">Pacific Time (UTC-8)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>New User Registration</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="allowRegistration" checked>
+                                <label for="allowRegistration"></label>
+                                <span class="toggle-label">Enabled</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-card">
+                    <h3>Quiz Settings</h3>
+                    
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="defaultTimeLimit">Default Question Time Limit</label>
+                            <select id="defaultTimeLimit" class="form-control">
+                                <option value="10">10 seconds</option>
+                                <option value="20">20 seconds</option>
+                                <option value="30" selected>30 seconds</option>
+                                <option value="60">60 seconds</option>
+                                <option value="90">90 seconds</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxQuestions">Maximum Questions Per Quiz</label>
+                            <input type="number" id="maxQuestions" value="50" class="form-control">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Default Quiz Visibility</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="defaultVisibility" value="public" checked>
+                                    <span>Public</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="defaultVisibility" value="private">
+                                    <span>Private</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Allow Quiz Comments</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="allowComments" checked>
+                                <label for="allowComments"></label>
+                                <span class="toggle-label">Enabled</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button class="btn-secondary">Cancel Changes</button>
+                    <button class="btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Confirmation Dialog -->
+<div class="modal-overlay" id="confirmationModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 id="confirmationTitle">Confirm Action</h3>
+            <button class="modal-close" id="closeConfirmModal">×</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmationMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" id="cancelAction">Cancel</button>
+            <button class="btn-delete" id="confirmAction">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        display: flex;
+        min-height: calc(100vh - 65px);
+    }
+    
+    .dashboard-sidebar {
+        width: 250px;
+        background-color: var(--dark-card-bg);
+        border-right: 1px solid var(--dark-border);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .sidebar-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--dark-border);
+    }
+    
+    .sidebar-header h2 {
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        font-size: 1.4rem;
+    }
+    
+    .sidebar-header h2 i {
+        color: var(--kahoot-light-purple);
+    }
+    
+    .sidebar-nav {
+        flex: 1;
+        padding: 20px 0;
+    }
+    
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        text-decoration: none;
+        color: var(--dark-text);
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+    }
+    
+    .nav-link:hover {
+        background-color: var(--dark-hover);
+        color: white;
+    }
+    
+    .nav-link.active {
+        color: white;
+        border-left-color: var(--kahoot-light-purple);
+        background-color: rgba(142, 82, 245, 0.1);
+    }
+    
+    .nav-link i {
+        width: 20px;
+        text-align: center;
+        font-size: 1.1rem;
+    }
+    
+    .sidebar-footer {
+        padding: 20px;
+        border-top: 1px solid var(--dark-border);
+    }
+    
+    .return-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--dark-text-secondary);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    
+    .return-link:hover {
+        color: white;
+    }
+    
+    .dashboard-content {
+        flex: 1;
+        padding: 20px;
+        background-color: var(--dark-bg);
+        overflow: auto;
+    }
+    
+    .dashboard-section {
+        display: none;
+        animation: fadeIn 0.3s;
+    }
+    
+    .dashboard-section.active {
+        display: block;
+    }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .section-header h1 {
+        color: white;
+        margin: 0;
+        font-size: 1.8rem;
+    }
+    
+    .date-display {
+        color: var(--dark-text-secondary);
+        font-size: 1.1rem;
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background-color: var(--dark-card-bg);
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.6rem;
+        color: white;
+    }
+    
+    .stat-icon.users { background-color: var(--kahoot-purple); }
+    .stat-icon.quizzes { background-color: var(--kahoot-blue); }
+    .stat-icon.played { background-color: var(--kahoot-green); }
+    .stat-icon.online { background-color: var(--kahoot-yellow); }
+    
+    .stat-info h3 {
+        color: var(--dark-text-secondary);
+        font-size: 0.9rem;
+        margin: 0 0 5px 0;
+        font-weight: 500;
+    }
+    
+    .stat-value {
+        color: white;
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .stat-change {
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .stat-change span {
+        color: var(--dark-text-secondary);
+        margin-left: 5px;
+    }
+    
+    .stat-change.positive { color: var(--kahoot-green); }
+    .stat-change.negative { color: var(--kahoot-red); }
+    .stat-change.neutral { color: var(--kahoot-yellow); }
+    
+    .chart-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .chart-card {
+        background-color: var(--dark-card-bg);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .chart-header h3 {
+        color: white;
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    
+    .chart-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-chart-option {
+        background-color: var(--dark-hover);
+        color: var(--dark-text-secondary);
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-chart-option.active {
+        background-color: var(--kahoot-light-purple);
+        color: white;
+    }
+    
+    .btn-refresh {
+        background-color: transparent;
+        color: var(--dark-text-secondary);
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 5px;
+        transition: transform 0.2s;
+    }
+    
+    .btn-refresh:hover {
+        color: white;
+        transform: rotate(180deg);
+    }
+    
+    .chart-body {
+        height: 250px;
+        position: relative;
+    }
+    
+    .recent-activity {
+        background-color: var(--dark-card-bg);
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .recent-activity h2 {
+        color: white;
+        font-size: 1.3rem;
+        margin: 0 0 20px 0;
+    }
+    
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .activity-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 12px;
+        border-radius: 8px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+    }
+    
+    .activity-item:hover {
+        background-color: var(--dark-hover);
+    }
+    
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 1.2rem;
+        color: white;
+        background-color: var(--kahoot-light-purple);
+    }
+    
+    .activity-details h4 {
+        color: white;
+        margin: 0 0 5px 0;
+        font-size: 1rem;
+    }
+    
+    .activity-details p {
+        color: var(--dark-text-secondary);
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    
+    .activity-time {
+        font-size: 0.8rem;
+        color: var(--dark-text-tertiary);
+        margin-top: 5px;
+        display: block;
+    }
+    
+    .data-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        color: var(--dark-text-secondary);
+    }
+    
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(142, 82, 245, 0.1);
+        border-left-color: var(--kahoot-light-purple);
+        border-radius: 50%;
+        margin-bottom: 15px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Toast Notifications */
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 300px;
+    }
+    
+    .toast {
+        padding: 12px 15px;
+        border-radius: 6px;
+        color: white;
+        display: flex;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        animation: toastIn 0.3s, fadeOut 0.5s 2.5s forwards;
+        position: relative;
+    }
+    
+    .toast-icon {
+        margin-right: 10px;
+        font-size: 1.2rem;
+    }
+    
+    .toast-message {
+        flex: 1;
+    }
+    
+    .toast-close {
+        background: none;
+        border: none;
+        color: white;
+        opacity: 0.7;
+        cursor: pointer;
+        font-size: 1.2rem;
+        padding: 0;
+        margin-left: 10px;
+    }
+    
+    .toast-close:hover {
+        opacity: 1;
+    }
+    
+    .toast-success {
+        background-color: var(--kahoot-green);
+    }
+    
+    .toast-error {
+        background-color: var(--kahoot-red);
+    }
+    
+    .toast-info {
+        background-color: var(--kahoot-blue);
+    }
+    
+    .toast-warning {
+        background-color: var(--kahoot-yellow);
+        color: #333;
+    }
+    
+    /* Confirmation Modal */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-dialog {
+        background-color: var(--dark-card-bg);
+        border-radius: 8px;
+        width: 90%;
+        max-width: 400px;
+        animation: modalIn 0.3s;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--dark-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+        color: white;
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--dark-text-secondary);
+        cursor: pointer;
+    }
+    
+    .modal-close:hover {
+        color: white;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        color: var(--dark-text);
+    }
+    
+    .modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid var(--dark-border);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    
+    .btn-delete {
+        background-color: var(--kahoot-red);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-delete:hover {
+        background-color: #c82333;
+    }
+    
+    .btn-delete-large {
+        background-color: var(--kahoot-red);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s;
+        margin-left: 8px;
+    }
+    
+    .btn-delete-large:hover {
+        background-color: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .actions {
+        display: flex;
+        align-items: center;
+    }
+    
+    @keyframes toastIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+    
+    @keyframes modalIn {
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-container {
+            flex-direction: column;
+        }
+        
+        .dashboard-sidebar {
+            width: 100%;
+            border-right: none;
+            border-bottom: 1px solid var(--dark-border);
+        }
+        
+        .sidebar-nav {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px;
+        }
+        
+        .nav-link {
+            border-left: none;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-link.active {
+            border-left-color: transparent;
+            border-bottom-color: var(--kahoot-light-purple);
+        }
+        
+        .chart-container,
+        .settings-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('.dashboard-section');
+        
+        // Navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetSection = this.getAttribute('data-section');
+                
+                // Update active nav link
+                navLinks.forEach(item => item.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show target section
+                sections.forEach(section => {
+                    if (section.id === targetSection) {
+                        section.classList.add('active');
+                        
+                        // Load data when section becomes active
+                        if (targetSection === 'users') {
+                            fetchUsers();
+                        } else if (targetSection === 'quizzes') {
+                            fetchQuizzes();
+                        }
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+                
+                // Update URL hash
+                window.location.hash = targetSection;
+            });
+        });
+        
+        // Display current date
+        const currentDateEl = document.getElementById('currentDate');
+        if (currentDateEl) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            currentDateEl.textContent = new Date().toLocaleDateString(undefined, options);
+        }
+        
+        // Fetch dashboard data
+        fetchDashboardData();
+        
+        // Fetch users for user management
+        fetchUsers();
+        
+        // Fetch quizzes for quiz management
+        fetchQuizzes();
+        
+        // Setup refresh buttons
+        document.getElementById('refreshUserChart').addEventListener('click', function() {
+            this.querySelector('i').classList.add('rotating');
+            fetchDashboardData().then(() => {
+                setTimeout(() => {
+                    this.querySelector('i').classList.remove('rotating');
+                }, 500);
+            });
+        });
+        
+        document.getElementById('refreshCategoryChart').addEventListener('click', function() {
+            this.querySelector('i').classList.add('rotating');
+            fetchDashboardData().then(() => {
+                setTimeout(() => {
+                    this.querySelector('i').classList.remove('rotating');
+                }, 500);
+            });
+        });
+        
+        // Setup refresh buttons for quizzes
+        document.getElementById('refreshQuizzes').addEventListener('click', function() {
+            this.querySelector('i').classList.add('rotating');
+            fetchQuizzes().then(() => {
+                setTimeout(() => {
+                    this.querySelector('i').classList.remove('rotating');
+                }, 500);
+            });
+        });
+        
+        // Chart instances
+        let userChart = null;
+        let categoryChart = null;
+        
+        // Fetch dashboard data from API
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch('/user/dashboard-data');
+                if (!response.ok) throw new Error('Failed to fetch dashboard data');
+                
+                const data = await response.json();
+                
+                // Update statistics
+                document.getElementById('userCount').textContent = data.userCount;
+                document.getElementById('quizCount').textContent = data.quizCount;
+                
+                // Calculate public quiz count and percentage
+                const publicQuizCount = data.quizzesByVisibility.find(v => v._id === true)?.count || 0;
+                const publicQuizPercent = data.quizCount > 0 
+                    ? Math.round((publicQuizCount / data.quizCount) * 100) 
+                    : 0;
+                
+                document.getElementById('publicQuizCount').textContent = publicQuizCount;
+                document.getElementById('publicQuizPercent').textContent = `${publicQuizPercent}% of all quizzes`;
+                document.getElementById('publicQuizPercent').className = 
+                    publicQuizPercent > 50 ? 'stat-change positive' : 'stat-change neutral';
+                
+                // Calculate admin count and percentage
+                const adminCount = data.usersByRole.find(r => r._id === 'Admin')?.count || 0;
+                const adminPercent = data.userCount > 0
+                    ? Math.round((adminCount / data.userCount) * 100)
+                    : 0;
+                
+                document.getElementById('adminCount').textContent = adminCount;
+                document.getElementById('adminPercent').textContent = `${adminPercent}% of all users`;
+                
+                // Show stats container, hide loading
+                document.getElementById('loadingStats').style.display = 'none';
+                document.getElementById('statsContainer').style.display = 'grid';
+                
+                // Update user distribution chart
+                updateUserChart(data.usersByRole);
+                
+                // Update categories chart
+                updateCategoryChart(data.quizzesByCategory);
+                
+                // Update recent activity
+                updateRecentActivity(data.recentUsers, data.recentQuizzes);
+                
+                return data;
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            }
+        }
+        
+        // Update user distribution chart
+        function updateUserChart(usersByRole) {
+            const ctx = document.getElementById('userChart').getContext('2d');
+            
+            // Prepare data for chart
+            const roleLabels = usersByRole.map(role => role._id || 'Unknown');
+            const roleCounts = usersByRole.map(role => role.count);
+            const backgroundColors = [
+                'rgba(142, 82, 245, 0.8)',   // Purple for Admin
+                'rgba(66, 133, 244, 0.8)',   // Blue for User
+                'rgba(219, 68, 55, 0.8)',    // Red for other roles
+                'rgba(244, 180, 0, 0.8)',    // Yellow for other roles
+                'rgba(15, 157, 88, 0.8)'     // Green for other roles
+            ];
+            
+            // Check if chart already exists
+            if (userChart) {
+                // Update existing chart
+                userChart.data.labels = roleLabels;
+                userChart.data.datasets[0].data = roleCounts;
+                userChart.update();
+            } else {
+                // Create new chart
+                userChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: roleLabels,
+                        datasets: [{
+                            data: roleCounts,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Update categories chart
+        function updateCategoryChart(quizzesByCategory) {
+            const ctx = document.getElementById('categoriesChart').getContext('2d');
+            
+            // Prepare data for chart
+            let labels, data;
+            
+            if (quizzesByCategory && quizzesByCategory.length > 0) {
+                labels = quizzesByCategory.map(cat => cat._id || 'Uncategorized');
+                data = quizzesByCategory.map(cat => cat.count);
+            } else {
+                labels = ['No categories found'];
+                data = [1];
+            }
+            
+            const backgroundColors = [
+                'rgba(142, 82, 245, 0.8)',
+                'rgba(66, 133, 244, 0.8)',
+                'rgba(219, 68, 55, 0.8)',
+                'rgba(244, 180, 0, 0.8)',
+                'rgba(15, 157, 88, 0.8)'
+            ];
+            
+            // Check if chart already exists
+            if (categoryChart) {
+                // Update existing chart
+                categoryChart.data.labels = labels;
+                categoryChart.data.datasets[0].data = data;
+                categoryChart.update();
+            } else {
+                // Create new chart
+                categoryChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Update recent activity
+        function updateRecentActivity(recentUsers, recentQuizzes) {
+            const activityList = document.getElementById('activityList');
+            activityList.innerHTML = '';
+            
+            // Function to format date
+            function formatDate(dateString) {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diff = now - date;
+                
+                if (diff < 60000) return 'just now';
+                if (diff < 3600000) return `${Math.floor(diff / 60000)} minutes ago`;
+                if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
+                if (diff < 2592000000) return `${Math.floor(diff / 86400000)} days ago`;
+                
+                return date.toLocaleDateString();
+            }
+            
+            // Add recent users
+            recentUsers.forEach(user => {
+                const activityItem = document.createElement('div');
+                activityItem.className = 'activity-item';
+                
+                activityItem.innerHTML = `
+                    <div class="activity-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="activity-details">
+                        <h4>New User Registered</h4>
+                        <p>${user.username} (${user.epost}) - ${user.role}</p>
+                        <span class="activity-time">${formatDate(user.createdAt)}</span>
+                    </div>
+                `;
+                
+                activityList.appendChild(activityItem);
+            });
+            
+            // Add recent quizzes
+            recentQuizzes.forEach(quiz => {
+                const activityItem = document.createElement('div');
+                activityItem.className = 'activity-item';
+                
+                activityItem.innerHTML = `
+                    <div class="activity-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <div class="activity-details">
+                        <h4>New Quiz Created</h4>
+                        <p>${quiz.title} (${quiz.questions.length} questions) - by ${quiz.createdBy ? quiz.createdBy.username : 'Unknown'}</p>
+                        <span class="activity-time">${formatDate(quiz.createdAt)}</span>
+                    </div>
+                `;
+                
+                activityList.appendChild(activityItem);
+            });
+            
+            // If no activity
+            if (activityList.children.length === 0) {
+                activityList.innerHTML = '<p class="no-data">No recent activity found</p>';
+            }
+        }
+        
+        // User table functions
+        async function fetchUsers() {
+            try {
+                const response = await fetch('/user/all');
+                if (!response.ok) throw new Error('Failed to fetch users');
+                
+                const data = await response.json();
+                
+                // Update table body
+                const tableBody = document.getElementById('usersTableBody');
+                tableBody.innerHTML = '';
+                
+                // Add rows for each user
+                data.users.forEach(user => {
+                    const row = document.createElement('tr');
+                    
+                    const joinDate = new Date(user.createdAt).toLocaleDateString();
+                    const userID = user._id ? user._id.substring(0, 8) + '...' : 'N/A';
+                    
+                    row.innerHTML = `
+                        <td>${userID}</td>
+                        <td>${user.username || 'N/A'}</td>
+                        <td>${user.epost || 'N/A'}</td>
+                        <td><span class="role ${(user.role || 'user').toLowerCase()}">${user.role || 'User'}</span></td>
+                        <td>${joinDate || 'N/A'}</td>
+                        <td class="actions">
+                            <button class="btn-icon" title="Edit User" onclick="editUser('${user._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <a href="#" onclick="deleteUser('${user._id}')" class="btn-delete">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                });
+                
+                // Hide loading, show table
+                document.getElementById('loadingUsers').style.display = 'none';
+                document.getElementById('usersTable').style.display = 'table';
+                
+                return data;
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                document.getElementById('loadingUsers').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Failed to load users. Please try again.
+                    </div>
+                `;
+                showToast('error', 'Failed to load users. Please try again.');
+            }
+        }
+        
+        // Quiz table functions
+        async function fetchQuizzes() {
+            try {
+                const response = await fetch('/quiz/admin/all');
+                if (!response.ok) throw new Error('Failed to fetch quizzes');
+                
+                const data = await response.json();
+                
+                // Update table body
+                const tableBody = document.getElementById('quizzesTableBody');
+                tableBody.innerHTML = '';
+                
+                // Add rows for each quiz
+                if (data.quizzes && data.quizzes.length > 0) {
+                    data.quizzes.forEach(quiz => {
+                        const row = document.createElement('tr');
+                        
+                        const createdDate = quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString() : 'N/A';
+                        const creatorName = quiz.createdBy ? quiz.createdBy.username : 'Unknown';
+                        const questionCount = quiz.questions ? quiz.questions.length : 0;
+                        const quizId = quiz._id ? quiz._id : '';
+                        
+                        row.innerHTML = `
+                            <td>${quizId.substring(0, 8)}...</td>
+                            <td>${quiz.title || 'Untitled'}</td>
+                            <td>${creatorName}</td>
+                            <td>${questionCount}</td>
+                            <td><span class="visibility ${quiz.isPublic ? 'public' : 'private'}">${quiz.isPublic ? 'Public' : 'Private'}</span></td>
+                            <td>${createdDate}</td>
+                            <td class="actions">
+                                <a href="/quiz/view/${quizId}" class="btn-icon" title="View Quiz">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="/quiz/edit/${quizId}" class="btn-icon" title="Edit Quiz">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="#" onclick="deleteQuiz('${quizId}')" class="btn-delete">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>
+                            </td>
+                        `;
+                        
+                        tableBody.appendChild(row);
+                    });
+                    
+                } else {
+                    // No quizzes found
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-data">
+                                <i class="fas fa-info-circle"></i> No quizzes found.
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Hide loading, show table
+                document.getElementById('loadingQuizzes').style.display = 'none';
+                document.getElementById('quizzesTable').style.display = 'table';
+                
+                return data;
+            } catch (error) {
+                console.error('Error fetching quizzes:', error);
+                document.getElementById('loadingQuizzes').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        Failed to load quizzes. Please try again.
+                    </div>
+                `;
+                showToast('error', 'Failed to load quizzes: ' + error.message);
+            }
+        }
+        
+        // Make fetchQuizzes and fetchUsers available globally
+        window.fetchQuizzes = fetchQuizzes;
+        window.fetchUsers = fetchUsers;
+        
+        // Show toast notification
+        function showToast(type, message) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let icon = 'info-circle';
+            if (type === 'success') icon = 'check-circle';
+            if (type === 'error') icon = 'exclamation-circle';
+            if (type === 'warning') icon = 'exclamation-triangle';
+            
+            toast.innerHTML = `
+                <div class="toast-icon"><i class="fas fa-${icon}"></i></div>
+                <div class="toast-message">${message}</div>
+                <button class="toast-close">&times;</button>
+            `;
+            
+            // Add event listener to close button
+            toast.querySelector('.toast-close').addEventListener('click', () => {
+                toast.remove();
+            });
+            
+            toastContainer.appendChild(toast);
+            
+            // Remove toast after 3 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        // Simplified confirmation function that directly calls the delete functions
+        function deleteQuiz(quizId) {
+            if (confirm('Are you sure you want to delete this quiz?')) {
+                window.location.href = `/quiz/delete/${quizId}`;
+            }
+        }
+        
+        // Edit User function
+        function editUser(userId) {
+            alert('Edit functionality is not implemented yet.');
+        }
+        
+        // Export quizzes functionality
+        document.getElementById('exportQuizzes').addEventListener('click', function() {
+            showToast('info', 'Preparing quiz export...');
+            
+            fetch('/quiz/export')
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to export quizzes');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'quizzes-export.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    showToast('success', 'Quizzes exported successfully!');
+                })
+                .catch(error => {
+                    console.error('Error exporting quizzes:', error);
+                    showToast('error', 'Failed to export quizzes');
+                });
+        });
+        
+        // Make user and quiz functions available globally
+        window.editUser = editUser;
+        window.showToast = showToast;
+        window.deleteUser = deleteUser;
+        window.deleteQuiz = deleteQuiz;
+        
+        // Check for hash in URL and navigate
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            const targetLink = document.querySelector(`.nav-link[data-section="${hash}"]`);
+            if (targetLink) {
+                targetLink.click();
+            }
+        } else {
+            // Load initial data for the default active section
+            const activeSection = document.querySelector('.dashboard-section.active');
+            if (activeSection && activeSection.id === 'users') {
+                fetchUsers();
+            } else if (activeSection && activeSection.id === 'quizzes') {
+                fetchQuizzes();
+            }
+        }
+    });
+    
+    // Define deleteUser and deleteQuiz functions globally
+    function deleteUser(userId) {
+        if (confirm('Are you sure you want to delete this user?')) {
+            window.location.href = `/user/users/${userId}`;
+        }
+    }
+    
+    function deleteQuiz(quizId) {
+        if (confirm('Are you sure you want to delete this quiz?')) {
+            window.location.href = `/quiz/delete/${quizId}`;
+        }
+    }
+</script>
+
+<%- include('./partials/footer') %>

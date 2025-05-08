@@ -1,0 +1,442 @@
+<%- include('./partials/header') %>
+<link rel="stylesheet" href="/css/kahoot-dark.css">
+
+<div class="page-header">
+    <h1><i class="fas fa-plus-circle"></i> Create Quiz</h1>
+    <div class="header-actions">
+        <a href="/profile" class="btn-secondary"><i class="fas fa-arrow-left"></i> Back to Profile</a>
+    </div>
+</div>
+
+<!-- Debug information - remove in production -->
+<% if (locals.isAuthenticated) { %>
+<div style="background-color: rgba(0,0,0,0.5); color: white; padding: 10px; margin-bottom: 10px; border-radius: 5px; font-family: monospace; font-size: 14px;">
+    <p style="margin: 0;">Debug info: User ID: <%= locals.userId %>, Role: <%= locals.userRole %></p>
+</div>
+<% } %>
+<!-- End debug info -->
+
+<div class="quiz-builder-container">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <form id="quizForm" action="/quiz/create" method="post">
+                <div class="form-group">
+                    <label for="quizTitle">Quiz Title*</label>
+                    <input type="text" id="quizTitle" name="title" class="form-control" required placeholder="Enter quiz title">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quizDescription">Description</label>
+                    <textarea id="quizDescription" name="description" class="form-control" rows="3" placeholder="Describe what your quiz is about"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="isPublic" id="isPublic">
+                        Make this quiz public
+                    </label>
+                    <p class="help-text">Public quizzes can be found and played by other users.</p>
+                </div>
+                
+                <input type="hidden" name="questions" id="questionsData">
+            </form>
+        </div>
+        
+        <div class="questions-nav">
+            <div class="questions-nav-title">
+                <h3>Questions</h3>
+            </div>
+            
+            <div id="questionsNavList">
+                <!-- Question navigation items will be added dynamically -->
+                <div class="no-questions" id="noQuestionsNavMessage">
+                    <p><i class="fas fa-info-circle"></i> No questions added yet.</p>
+                </div>
+            </div>
+            
+            <button type="button" id="addQuestionBtn" class="btn-add-question">
+                <i class="fas fa-plus"></i> Add Question
+            </button>
+        </div>
+        
+        <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="window.location.href='/profile'">Cancel</button>
+            <button type="button" class="btn-primary" id="saveQuizBtn">Save Quiz</button>
+        </div>
+    </div>
+    
+    <!-- Main Content Area -->
+    <div class="content-area">
+        <div id="questionsContainer">
+            <div class="no-questions" id="noQuestionsMessage">
+                <p><i class="fas fa-info-circle"></i> No questions added yet. Click "Add Question" to begin.</p>
+            </div>
+            <!-- Questions will be added here dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Question Template (hidden) -->
+<div id="questionTemplate" style="display:none">
+    <div class="question-card" data-question-index="{QID}">
+        <div class="question-header">
+            <h4>Question {QNUM}</h4>
+            <div class="question-actions">
+                <button type="button" class="btn-icon delete-question" title="Delete Question">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="question-media">
+            <div>Find and add media</div>
+            <div class="media-icons">
+                <div class="media-icon"><i class="fas fa-image"></i></div>
+                <div class="media-icon"><i class="fas fa-film"></i></div>
+                <div class="media-icon"><i class="fas fa-volume-up"></i></div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <div class="question-text-container">
+                <input type="text" id="q{QID}_text" class="question-text form-control" placeholder="Begin writing your question" required>
+            </div>
+        </div>
+        
+        <div class="question-settings">
+            <div class="setting-item">
+                <div class="setting-label">Time limit</div>
+                <select id="q{QID}_time" class="time-selector time-limit">
+                    <option value="5">5 seconds</option>
+                    <option value="10">10 seconds</option>
+                    <option value="20">20 seconds</option>
+                    <option value="30" selected>30 seconds</option>
+                    <option value="60">60 seconds</option>
+                    <option value="90">90 seconds</option>
+                    <option value="120">120 seconds</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <div class="setting-label">Points</div>
+                <select class="time-selector">
+                    <option value="standard" selected>Standard</option>
+                    <option value="double">Double points</option>
+                    <option value="no-points">No points</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="options-container">
+            <label>Options*</label>
+            <p class="help-text">Select the correct answer(s)</p>
+            
+            <div class="options-list">
+                <div class="option-item" data-option-index="0">
+                    <div class="option-symbol">▲</div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="option-correct">
+                        <input type="text" class="option-text form-control" placeholder="Add answer 1" required>
+                    </label>
+                    <button type="button" class="btn-icon delete-option" title="Delete Option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="option-item" data-option-index="1">
+                    <div class="option-symbol">◆</div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="option-correct">
+                        <input type="text" class="option-text form-control" placeholder="Add answer 2" required>
+                    </label>
+                    <button type="button" class="btn-icon delete-option" title="Delete Option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <button type="button" class="btn-add-option">
+                <i class="fas fa-plus"></i> Add Option
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Question Navigation Item Template (hidden) -->
+<div id="questionNavTemplate" style="display:none">
+    <div class="question-item" data-question-id="{QID}">
+        Question {QNUM}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionsContainer = document.getElementById('questionsContainer');
+        const questionsNavList = document.getElementById('questionsNavList');
+        const questionsData = document.getElementById('questionsData');
+        const questionTemplate = document.getElementById('questionTemplate').innerHTML;
+        const questionNavTemplate = document.getElementById('questionNavTemplate').innerHTML;
+        const noQuestionsMessage = document.getElementById('noQuestionsMessage');
+        const noQuestionsNavMessage = document.getElementById('noQuestionsNavMessage');
+        
+        let questionCount = 0;
+        let currentQuestionId = null;
+        
+        // Add Question Button Click
+        document.getElementById('addQuestionBtn').addEventListener('click', function() {
+            const qid = addNewQuestion();
+            showQuestion(qid);
+        });
+        
+        // Save Quiz Button Click
+        document.getElementById('saveQuizBtn').addEventListener('click', function() {
+            document.getElementById('quizForm').dispatchEvent(new Event('submit'));
+        });
+        
+        // Form Submit
+        document.getElementById('quizForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (validateForm()) {
+                const questions = collectQuestionData();
+                questionsData.value = JSON.stringify(questions);
+                this.submit();
+            }
+        });
+        
+        // Event Delegation for Questions Container
+        questionsContainer.addEventListener('click', function(e) {
+            // Delete Question
+            if (e.target.closest('.delete-question')) {
+                const questionCard = e.target.closest('.question-card');
+                const qid = questionCard.dataset.questionIndex;
+                deleteQuestion(qid);
+            }
+            
+            // Add Option
+            if (e.target.closest('.btn-add-option')) {
+                const optionsList = e.target.closest('.options-container').querySelector('.options-list');
+                const optionCount = optionsList.children.length;
+                
+                if (optionCount >= 4) {
+                    alert('Maximum 4 options allowed per question.');
+                    return;
+                }
+                
+                const newOption = document.createElement('div');
+                newOption.className = 'option-item';
+                newOption.dataset.optionIndex = optionCount;
+                
+                // Use different symbols based on option number
+                let symbol = '●'; // Default
+                if (optionCount === 2) symbol = '■';
+                else if (optionCount === 3) symbol = '★';
+                
+                newOption.innerHTML = `
+                    <div class="option-symbol">${symbol}</div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="option-correct">
+                        <input type="text" class="option-text form-control" placeholder="Add answer ${optionCount + 1}" required>
+                    </label>
+                    <button type="button" class="btn-icon delete-option" title="Delete Option">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                optionsList.appendChild(newOption);
+            }
+            
+            // Delete Option
+            if (e.target.closest('.delete-option')) {
+                const optionItem = e.target.closest('.option-item');
+                const optionsList = optionItem.parentElement;
+                
+                // Don't delete if only two options remain
+                if (optionsList.children.length <= 2) {
+                    alert('Each question must have at least two options.');
+                    return;
+                }
+                
+                optionItem.remove();
+                
+                // Update option numbers and symbols
+                Array.from(optionsList.children).forEach((option, idx) => {
+                    option.dataset.optionIndex = idx;
+                    const optionText = option.querySelector('.option-text');
+                    optionText.placeholder = `Add answer ${idx + 1}`;
+                    
+                    // Update symbol based on index
+                    let symbol = '▲'; // first option
+                    if (idx === 1) symbol = '◆';
+                    else if (idx === 2) symbol = '●';
+                    else if (idx === 3) symbol = '■';
+                    
+                    option.querySelector('.option-symbol').textContent = symbol;
+                });
+            }
+        });
+        
+        // Event Delegation for Questions Navigation
+        questionsNavList.addEventListener('click', function(e) {
+            const questionItem = e.target.closest('.question-item');
+            if (questionItem) {
+                const qid = questionItem.dataset.questionId;
+                showQuestion(qid);
+            }
+        });
+        
+        function addNewQuestion() {
+            const qid = Date.now().toString(); // Unique ID for the question
+            questionCount++;
+            
+            // Create question card
+            let newQuestion = questionTemplate
+                .replace(/{QID}/g, qid)
+                .replace(/{QNUM}/g, questionCount);
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newQuestion;
+            questionsContainer.appendChild(tempDiv.firstElementChild);
+            
+            // Create question nav item
+            let newQuestionNav = questionNavTemplate
+                .replace(/{QID}/g, qid)
+                .replace(/{QNUM}/g, questionCount);
+                
+            const tempNavDiv = document.createElement('div');
+            tempNavDiv.innerHTML = newQuestionNav;
+            questionsNavList.appendChild(tempNavDiv.firstElementChild);
+            
+            checkQuestionCount();
+            return qid;
+        }
+        
+        function showQuestion(qid) {
+            // Hide all question cards
+            const allCards = questionsContainer.querySelectorAll('.question-card');
+            allCards.forEach(card => {
+                card.style.display = 'none';
+            });
+            
+            // Show the selected question card
+            const selectedCard = questionsContainer.querySelector(`.question-card[data-question-index="${qid}"]`);
+            if (selectedCard) {
+                selectedCard.style.display = 'block';
+            }
+            
+            // Update active state in navigation
+            const allNavItems = questionsNavList.querySelectorAll('.question-item');
+            allNavItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const selectedNavItem = questionsNavList.querySelector(`.question-item[data-question-id="${qid}"]`);
+            if (selectedNavItem) {
+                selectedNavItem.classList.add('active');
+            }
+            
+            currentQuestionId = qid;
+        }
+        
+        function deleteQuestion(qid) {
+            // Remove question card
+            const questionCard = questionsContainer.querySelector(`.question-card[data-question-index="${qid}"]`);
+            if (questionCard) {
+                questionCard.remove();
+            }
+            
+            // Remove question nav item
+            const questionNavItem = questionsNavList.querySelector(`.question-item[data-question-id="${qid}"]`);
+            if (questionNavItem) {
+                questionNavItem.remove();
+            }
+            
+            updateQuestionNumbers();
+            checkQuestionCount();
+            
+            // If we deleted the currently showing question
+            if (currentQuestionId === qid) {
+                const firstCard = questionsContainer.querySelector('.question-card');
+                if (firstCard) {
+                    showQuestion(firstCard.dataset.questionIndex);
+                } else {
+                    currentQuestionId = null;
+                }
+            }
+        }
+        
+        function updateQuestionNumbers() {
+            const questions = questionsContainer.querySelectorAll('.question-card');
+            const navItems = questionsNavList.querySelectorAll('.question-item');
+            
+            questionCount = questions.length;
+            
+            questions.forEach((question, index) => {
+                const header = question.querySelector('.question-header h4');
+                header.textContent = `Question ${index + 1}`;
+            });
+            
+            navItems.forEach((navItem, index) => {
+                navItem.textContent = `Question ${index + 1}`;
+            });
+        }
+        
+        function checkQuestionCount() {
+            if (questionCount > 0) {
+                noQuestionsMessage.style.display = 'none';
+                noQuestionsNavMessage.style.display = 'none';
+            } else {
+                noQuestionsMessage.style.display = 'block';
+                noQuestionsNavMessage.style.display = 'block';
+            }
+        }
+        
+        function validateForm() {
+            const title = document.getElementById('quizTitle').value.trim();
+            
+            if (!title) {
+                alert('Please enter a quiz title.');
+                return false;
+            }
+            
+            if (questionCount === 0) {
+                alert('Please add at least one question.');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function collectQuestionData() {
+            const questions = [];
+            const questionCards = questionsContainer.querySelectorAll('.question-card');
+            
+            questionCards.forEach(card => {
+                const questionText = card.querySelector('.question-text').value;
+                const timeLimit = parseInt(card.querySelector('.time-limit').value) || 30;
+                const options = [];
+                
+                const optionItems = card.querySelectorAll('.option-item');
+                optionItems.forEach(item => {
+                    options.push({
+                        text: item.querySelector('.option-text').value,
+                        isCorrect: item.querySelector('.option-correct').checked
+                    });
+                });
+                
+                questions.push({
+                    questionText,
+                    timeLimit,
+                    options
+                });
+            });
+            
+            return questions;
+        }
+        
+        // Add first question automatically
+        const firstQid = addNewQuestion();
+        showQuestion(firstQid);
+    });
+</script>
+
+</body>
+</html>

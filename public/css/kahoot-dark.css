@@ -1,0 +1,659 @@
+/* Kahoot-inspired Dark Mode Theme */
+:root {
+  --kahoot-purple: #3e2f56;
+  --kahoot-blue: #0542b9;
+  --kahoot-red: #e21b3c;
+  --kahoot-yellow: #ffb400;
+  --kahoot-green: #26890c;
+  --kahoot-bg-purple: #2e1f37;
+  --kahoot-light-purple: #8e52f5;
+  --dark-bg: #1a1a1a;
+  --dark-secondary-bg: #2d2d2d;
+  --dark-card-bg: #333333;
+  --dark-input-bg: #3a3a3a;
+  --dark-text: #f0f0f0;
+  --dark-text-secondary: #c5c5c5;
+  --dark-border: #444;
+  --dark-hover: #4a4a4a;
+  --sidebar-width: 300px;
+}
+
+body {
+  font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--kahoot-bg-purple);
+  background-image: url('/images/kahoot-classroom-bg.jpg');
+  background-size: cover;
+  background-attachment: fixed;
+  color: var(--dark-text);
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Split Layout Structure */
+.quiz-builder-container {
+  display: flex;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: rgba(35, 35, 45, 0.9);
+  padding: 1.5rem;
+  overflow-y: auto;
+  border-right: 1px solid #444;
+  flex-shrink: 0;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+}
+
+.content-area {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  background-color: rgba(45, 45, 45, 0.8);
+  backdrop-filter: blur(5px);
+}
+
+.sidebar-header {
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-header h1 {
+  font-size: 1.5rem;
+  color: white;
+  margin: 0 0 0.5rem 0;
+}
+
+.questions-nav {
+  margin-top: 2rem;
+}
+
+.questions-nav-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.questions-nav-title h3 {
+  margin: 0;
+  color: #fff;
+}
+
+.question-item {
+  background-color: var(--dark-card-bg);
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.question-item:hover, .question-item.active {
+  background-color: var(--dark-hover);
+}
+
+.question-item.active {
+  border-left: 4px solid var(--kahoot-light-purple);
+}
+
+.quiz-settings {
+  margin-top: 2rem;
+}
+
+.container {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Header Styles */
+.page-header {
+  padding: 1rem 1.5rem;
+  background-color: rgba(35, 35, 45, 0.9);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.page-header h1 {
+  font-size: 1.5rem;
+  color: white;
+  margin: 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.breadcrumbs {
+  font-size: 0.9rem;
+  color: var(--dark-text);
+}
+
+.breadcrumbs a {
+  color: white;
+  text-decoration: none;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Form Styles */
+.quiz-form-container {
+  height: 100%;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--dark-border);
+  background-color: var(--dark-input-bg);
+  color: var(--dark-text);
+  transition: border-color 0.3s;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--kahoot-light-purple);
+  box-shadow: 0 0 0 2px rgba(142, 82, 245, 0.25);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 0.5rem;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--kahoot-light-purple);
+}
+
+.help-text {
+  color: var(--dark-text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* Question Card Styles */
+.question-card {
+  background: var(--dark-card-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  background-color: #333;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+
+.question-header h4 {
+  font-size: 1.25rem;
+  color: white;
+  margin: 0;
+}
+
+.question-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Question input style */
+.question-text-container {
+  background-color: white;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.question-text {
+  border: none;
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 6px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* Options Styles */
+.options-container {
+  margin-top: 1.5rem;
+}
+
+.options-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 8px;
+  min-height: 60px;
+  border: none;
+}
+
+/* Kahoot-style color coding for options */
+.option-item:nth-child(1) {
+  background-color: var(--kahoot-red);
+}
+
+.option-item:nth-child(2) {
+  background-color: var(--kahoot-blue);
+}
+
+.option-item:nth-child(3) {
+  background-color: var(--kahoot-yellow);
+}
+
+.option-item:nth-child(4) {
+  background-color: var(--kahoot-green);
+}
+
+.option-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.option-item .checkbox-label {
+  flex: 1;
+  color: white;
+  font-weight: bold;
+}
+
+.option-symbol {
+  font-size: 24px;
+  margin-right: 10px;
+  background: white;
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.option-text {
+  flex: 1;
+  color: #333;
+  background-color: white;
+  border: none !important;
+  font-weight: 500;
+}
+
+.option-correct {
+  margin-left: 0;
+}
+
+.option-item .delete-option {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Button Styles */
+.btn-primary, .btn-secondary, .btn-add-question, .btn-add-option {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-primary {
+  background-color: var(--kahoot-light-purple);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #9d66ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(142, 82, 245, 0.3);
+}
+
+.btn-secondary {
+  background-color: var(--dark-input-bg);
+  color: var(--dark-text);
+}
+
+.btn-secondary:hover {
+  background-color: var(--dark-hover);
+  transform: translateY(-2px);
+}
+
+.btn-add-question {
+  background-color: var(--kahoot-light-purple);
+  color: white;
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.btn-add-question:hover {
+  background-color: #9d66ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(142, 82, 245, 0.3);
+}
+
+.btn-add-option {
+  background-color: var(--dark-input-bg);
+  color: var(--dark-text);
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  margin: 0 auto;
+  display: block;
+}
+
+.btn-add-option:hover {
+  background-color: var(--dark-hover);
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--dark-text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-icon.delete-quiz-btn:hover {
+  color: var(--kahoot-red);
+  background-color: rgba(226, 27, 60, 0.1);
+}
+
+.delete-question:hover {
+  color: var(--kahoot-red);
+}
+
+.delete-option:hover {
+  color: var(--dark-text);
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.form-actions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* No Questions Message */
+.no-questions {
+  text-align: center;
+  padding: 2rem;
+  color: var(--dark-text-secondary);
+  background-color: var(--dark-card-bg);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.no-questions i {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: var(--kahoot-light-purple);
+}
+
+/* Question Media Area */
+.question-media {
+  width: 100%;
+  height: 150px;
+  background-color: #444;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+}
+
+.media-icons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.media-icon {
+  width: 40px;
+  height: 40px;
+  background-color: #555;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.media-icon:hover {
+  background-color: var(--kahoot-light-purple);
+  color: white;
+  transform: scale(1.1);
+}
+
+.question-settings {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  margin-bottom: 25px;
+}
+
+.setting-item {
+  flex: 1;
+  padding: 10px;
+  background-color: var(--dark-input-bg);
+  border-radius: 8px;
+}
+
+.setting-label {
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 5px;
+}
+
+/* Timer selector */
+.time-selector {
+  background-color: var(--dark-input-bg);
+  border: 1px solid var(--dark-border);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  width: 100%;
+}
+
+/* Quiz visibility badges */
+.visibility {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.visibility.public {
+    background-color: var(--kahoot-green);
+    color: white;
+}
+
+.visibility.private {
+    background-color: var(--dark-secondary-bg);
+    color: var(--dark-text-secondary);
+}
+
+/* Table styles for admin panel */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--dark-border);
+}
+
+.data-table th {
+    background-color: var(--dark-secondary-bg);
+    color: var(--dark-text-secondary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--dark-hover);
+}
+
+.data-table .actions {
+    display: flex;
+    gap: 8px;
+}
+
+.no-data {
+    text-align: center;
+    color: var(--dark-text-secondary);
+    padding: 20px;
+}
+
+.no-data i {
+    margin-right: 8px;
+    color: var(--kahoot-light-purple);
+}
+
+/* Responsive Styles */
+@media (max-width: 992px) {
+  .quiz-builder-container {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #444;
+  }
+  
+  .content-area {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 768px) {
+  .options-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .form-actions button {
+    width: 100%;
+  }
+}
+
+/* Animation for new elements */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Header navigation */
+header nav {
+  background-color: rgba(45, 45, 45, 0.9);
+  padding: 10px 20px;
+}
+
+header nav ul {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+header nav li {
+  margin-right: 20px;
+}
+
+header nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+header nav a:hover {
+  color: var(--kahoot-light-purple);
+}
+
+/* Decorative elements */
+.classroom-decor {
+  position: absolute;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.bunting {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+}

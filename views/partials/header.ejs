@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kahoot Clone - Interactive Quiz Game">
+    <title><%= title %></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/darkmode.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <style>
+        /* Modern Kahoot-style Navbar */
+        header {
+            background-color: var(--kahoot-purple);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            transition: transform 0.3s;
+        }
+        
+        .navbar-brand:hover {
+            transform: scale(1.05);
+        }
+        
+        .navbar-brand i {
+            color: var(--kahoot-light-purple);
+            margin-right: 0.5rem;
+            font-size: 1.8rem;
+        }
+        
+        .navbar-links {
+            display: flex;
+            align-items: center;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            gap: 0.5rem;
+        }
+        
+        .navbar-links li {
+            position: relative;
+        }
+        
+        .navbar-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .navbar-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .navbar-link.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+        }
+        
+        .navbar-link i {
+            font-size: 1rem;
+        }
+        
+        /* Badge for user role */
+        .user-role-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+        
+        .admin-role {
+            background-color: var(--kahoot-red);
+            color: white;
+        }
+        
+        .support-1st-role {
+            background-color: var(--kahoot-blue);
+            color: white;
+        }
+        
+        .support-2nd-role {
+            background-color: var(--kahoot-green);
+            color: white;
+        }
+        
+        /* Special Join button */
+        .join-btn {
+            background-color: var(--kahoot-green);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .join-btn:hover {
+            background-color: #2ba10d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .logout {
+            /* background: none; */
+            background-color: rgb(253, 12, 12);
+            border: none;
+            color: rgb(24, 15, 15);
+            cursor: pointer;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-logout:hover {
+            background-color: rgb(12, 11, 11);
+        }
+        
+        /* User dropdown menu */
+        .user-menu {
+            position: relative;
+        }
+        
+        .user-menu-trigger {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: white;
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .user-menu-trigger:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            background-color: var(--kahoot-light-purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            font-weight: bold;
+        }
+        
+        .user-menu-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: var(--dark-secondary-bg);
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 220px;
+            padding: 0.5rem 0;
+            margin-top: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .user-menu.active .user-menu-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-item {
+            padding: 0.7rem 1rem;
+            color: var(--dark-text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .dropdown-item:hover {
+            background-color: var(--dark-hover);
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background-color: var(--dark-border);
+            margin: 0.5rem 0;
+        }
+        
+        /* Mobile menu */
+        .navbar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0.8rem 1rem;
+            }
+            
+            .navbar-toggle {
+                display: block;
+            }
+            
+            .navbar-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background-color: var(--kahoot-purple);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 1rem;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            }
+            
+            .navbar-links.active {
+                display: flex;
+            }
+            
+            .navbar-link, .btn-logout {
+                text-align: center;
+                margin: 0.3rem 0;
+                background-color: gray;
+            }
+            
+            .user-role-badge {
+                display: inline-block;
+                margin: 0.2rem 0 0 0;
+            }
+            
+            .user-menu-dropdown {
+                position: static;
+                width: 100%;
+                box-shadow: none;
+                margin: 0.5rem 0;
+                display: none;
+            }
+            
+            .user-menu.active .user-menu-dropdown {
+                display: block;
+            }
+        }
+        
+        /* Auth container - simplified for proper positioning */
+        .auth-layout main {
+            padding-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <a href="/" class="navbar-brand">
+                <i class="fas fa-gamepad"></i> 
+                Quizzify
+            </a>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <ul class="navbar-links" id="navbarLinks">
+                <li><a href="/" class="navbar-link"><i class="fas fa-home"></i> Home</a></li>
+                
+                <% if (typeof isAuthenticated !== 'undefined' && isAuthenticated) { %>
+                    <li class="user-menu" id="userMenu">
+                        <div class="user-menu-trigger">
+                            <div class="user-avatar">
+                                <% 
+                                    let displayChar = 'U';
+                                    if (locals.email) {
+                                        // Use first letter of email
+                                        displayChar = locals.email.substring(0, 1).toUpperCase();
+                                    } else if (locals.username) {
+                                        // Fallback to username first letter
+                                        displayChar = locals.username.substring(0, 1).toUpperCase();
+                                    }
+                                %>
+                                <%= displayChar %>
+                            </div>
+                            <span>
+                                <% 
+                                    let displayName = 'User';
+                                    if (locals.email) {
+                                        // Display email up to @ sign
+                                        displayName = locals.email.split('@')[0];
+                                    } else if (locals.username) {
+                                        displayName = locals.username;
+                                    }
+                                %>
+                                <%= displayName %> <i class="fas fa-caret-down"></i>
+                            </span>
+                        </div>
+                        <div class="user-menu-dropdown">
+                            <a href="/profile" class="dropdown-item">
+                                <i class="fas fa-user"></i> My Profile
+                            </a>
+ 
+                            <a href="/quiz/create" class="dropdown-item">
+                                <i class="fas fa-plus-circle"></i> Create Quiz
+                            </a>
+                            <% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+                                <div class="dropdown-divider"></div>
+                                <a href="/dashboard" class="dropdown-item">
+                                    <i class="fas fa-cogs"></i> Admin Panel
+                                    <span class="user-role-badge admin-role">Admin</span>
+                                </a>
+                            <% } %>
+                        </div>
+                    </li>
+                    <li><a href="/quiz/join" class="navbar-link join-btn"><i class="fas fa-gamepad"></i> Join Game</a></li>
+                    <button id="darkModeToggle" class="btn-secondary"><i class="fas fa-moon"></i> Toggle Theme</button>
+                    <form action="/logout" method="get" class="logout-form">
+                        <button type="submit" class="logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                <% } else { %>
+                    <li><a href="/quiz/join" class="navbar-link join-btn"><i class="fas fa-gamepad"></i> Join Game</a></li>
+                    <li><a href="/login" class="navbar-link"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                    <li><a href="/register" class="navbar-link"><i class="fas fa-user-plus"></i> Register</a></li>
+                    <button id="darkModeToggle" class="btn-secondary"><i class="fas fa-moon"></i> Toggle Theme</button>
+                <% } %>
+            </ul>
+        </nav>
+    </header>
+    
+    <main id="main-content">
+    <script>
+        // Toggle mobile menu
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarToggle = document.getElementById('navbarToggle');
+            const navbarLinks = document.getElementById('navbarLinks');
+            
+            if (navbarToggle && navbarLinks) {
+                navbarToggle.addEventListener('click', function() {
+                    navbarLinks.classList.toggle('active');
+                });
+            }
+            
+            // User menu dropdown
+            const userMenu = document.getElementById('userMenu');
+            if (userMenu) {
+                userMenu.addEventListener('click', function(e) {
+                    this.classList.toggle('active');
+                    e.stopPropagation();
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    if (userMenu.classList.contains('active')) {
+                        userMenu.classList.remove('active');
+                    }
+                });
+            }
+            
+            // Add current page indicator
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.navbar-link');
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath || 
+                    (href !== '/' && currentPath.startsWith(href))) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
