@@ -106,8 +106,43 @@ io.on('connection', (socket) => {
             return;
         }
         
-        if (gameRooms[gameCode].status !== 'waiting') {
-            socket.emit('join-failed', { message: 'Game already in progress' });
+        // Check game status - allow joining even if game is playing
+        if (gameRooms[gameCode].status === 'finished') {
+            socket.emit('join-failed', { message: 'Game has ended' });
+            return;
+        }
+        
+        // Check if player already exists (by id or socket id)
+        const existingPlayer = gameRooms[gameCode].players.find(p => 
+            (playerId && p.id === playerId) || p.socketId === socket.id
+        );
+        
+        if (existingPlayer) {
+            // Update socket id if player reconnects
+            existingPlayer.socketId = socket.id;
+            socket.join(gameCode);
+            
+            // Send join success with game state info
+            socket.emit('join-success', { 
+                gameCode,
+                playerName: existingPlayer.name,
+                quizTitle: gameRooms[gameCode].quiz.title,
+                gameInProgress: gameRooms[gameCode].status === 'playing',
+                currentQuestionIndex: gameRooms[gameCode].currentQuestion
+            });
+            
+            // If game is already playing, send the current question info immediately
+            if (gameRooms[gameCode].status === 'playing') {
+                socket.emit('question-started', { 
+                    questionIndex: gameRooms[gameCode].currentQuestion 
+                });
+            }
+            
+            // Send current players to everyone
+            io.to(gameCode).emit('player-list-update', { 
+                players: gameRooms[gameCode].players 
+            });
+            
             return;
         }
         
@@ -128,29 +163,48 @@ io.on('connection', (socket) => {
         // Notify host about new player
         socket.to(gameRooms[gameCode].hostSocket).emit('player-joined', player);
         
-        // Send confirmation to player
+        // Send confirmation to player with game state info
         socket.emit('join-success', { 
             gameCode,
             playerName,
-            quizTitle: gameRooms[gameCode].quiz.title
+            quizTitle: gameRooms[gameCode].quiz.title,
+            gameInProgress: gameRooms[gameCode].status === 'playing',
+            currentQuestionIndex: gameRooms[gameCode].currentQuestion
         });
         
-        // Send all players to the new player
-        socket.emit('player-list-update', { players: gameRooms[gameCode].players });
+        // If game is already playing, send the current question info immediately
+        if (gameRooms[gameCode].status === 'playing') {
+            socket.emit('question-started', { 
+                questionIndex: gameRooms[gameCode].currentQuestion 
+            });
+        }
+        
+        // Send all players to everyone
+        io.to(gameCode).emit('player-list-update', { 
+            players: gameRooms[gameCode].players 
+        });
     });
 
     // When host starts the game
     socket.on('start-game', ({ gameCode }) => {
+        console.log('Starting game:', gameCode);
         if (!gameRooms[gameCode]) return;
         
         gameRooms[gameCode].status = 'playing';
         
-        // Notify all players in the room
+        // Notify all players in the room that game has started
         io.to(gameCode).emit('game-started');
+        
+        // After a short delay, send the first question
+        // This ensures clients have time to process the game-started event
+        setTimeout(() => {
+            io.to(gameCode).emit('question-started', { questionIndex: 0 });
+        }, 500);
     });
 
     // When host advances to next question
     socket.on('next-question', ({ gameCode, questionIndex }) => {
+        console.log('Next question:', questionIndex, 'for game:', gameCode);
         if (!gameRooms[gameCode]) return;
         
         gameRooms[gameCode].currentQuestion = questionIndex;
@@ -158,9 +212,35 @@ io.on('connection', (socket) => {
         // Notify all players in the room
         io.to(gameCode).emit('question-started', { questionIndex });
     });
+    
+    // When player requests question data
+    socket.on('get-question', ({ gameCode, questionIndex }) => {
+        console.log('Player requested question data:', questionIndex, 'for game:', gameCode);
+        if (!gameRooms[gameCode]) return;
+        
+        const quiz = gameRooms[gameCode].quiz;
+        if (questionIndex >= quiz.questions.length) {
+            console.log('Question index out of bounds:', questionIndex);
+            return;
+        }
+        
+        const question = quiz.questions[questionIndex];
+        
+        // Send question without revealing correct answers
+        socket.emit('question-data', {
+            questionText: question.questionText,
+            options: question.options.map(opt => ({
+                text: opt.text,
+                // Don't send isCorrect
+            })),
+            timeLimit: question.timeLimit || 30,
+            totalQuestions: quiz.questions.length
+        });
+    });
 
     // When player submits an answer
-    socket.on('submit-answer', ({ gameCode, questionIndex, answerIndex, playerId }) => {
+    socket.on('submit-answer', ({ gameCode, questionIndex, answerIndex, playerId, timeLeft }) => {
+        console.log('Player submitted answer:', answerIndex, 'for question:', questionIndex);
         if (!gameRooms[gameCode]) return;
         
         const player = gameRooms[gameCode].players.find(p => p.id === playerId || p.socketId === socket.id);
@@ -168,20 +248,36 @@ io.on('connection', (socket) => {
         
         // Record the answer
         const question = gameRooms[gameCode].quiz.questions[questionIndex];
-        const isCorrect = question.options[answerIndex].isCorrect;
-        const answerTime = Date.now(); // This would normally be used for time-based scoring
+        const isCorrect = answerIndex >= 0 && question.options[answerIndex] && question.options[answerIndex].isCorrect;
+        const answerTime = Date.now(); 
+        
+        // Calculate points based on time left
+        let points = 0;
+        if (isCorrect) {
+            // Base points (up to 1000) plus time bonus
+            const timeBonus = Math.round((timeLeft / question.timeLimit) * 500);
+            points = 500 + timeBonus;
+        }
         
         // Save the answer
         player.answers[questionIndex] = {
             answerIndex,
             isCorrect,
-            time: answerTime
+            time: answerTime,
+            points: points
         };
         
         // Update score if correct
         if (isCorrect) {
-            player.score += 1000; // Basic scoring, could be more complex
+            player.score += points;
         }
+        
+        // Send answer result back to player
+        socket.emit('answer-result', {
+            isCorrect,
+            points,
+            correctAnswerIndex: question.options.findIndex(opt => opt.isCorrect)
+        });
         
         // Notify host about the answer
         socket.to(gameRooms[gameCode].hostSocket).emit('player-answered', {
@@ -193,24 +289,94 @@ io.on('connection', (socket) => {
         });
     });
 
+    // When host ends a question (time up)
+    socket.on('end-question', ({ gameCode }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        io.to(gameCode).emit('question-ended');
+    });
+
+    // When host ends the game
+    socket.on('end-game', ({ gameCode }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        gameRooms[gameCode].status = 'finished';
+        const players = gameRooms[gameCode].players;
+        
+        // Calculate rankings
+        const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+        
+        // Add rank to each player
+        const rankedPlayers = sortedPlayers.map((player, index) => ({
+            id: player.id,
+            name: player.name,
+            score: player.score,
+            rank: index + 1
+        }));
+        
+        // Notify all players
+        io.to(gameCode).emit('game-over', {
+            players: rankedPlayers
+        });
+        
+        // Clean up after a delay
+        setTimeout(() => {
+            delete gameRooms[gameCode];
+        }, 3600000); // 1 hour retention
+    });
+
+    // When player requests current game state (for reconnection)
+    socket.on('get-game-state', ({ gameCode }) => {
+        console.log('Player requested game state for:', gameCode);
+        
+        if (!gameRooms[gameCode]) {
+            socket.emit('join-failed', { message: 'Game not found' });
+            return;
+        }
+        
+        const gameRoom = gameRooms[gameCode];
+        
+        if (gameRoom.status === 'playing') {
+            // Tell player which question we're currently on
+            socket.emit('question-started', { 
+                questionIndex: gameRoom.currentQuestion 
+            });
+        } else if (gameRoom.status === 'finished') {
+            // If game is already over, send results
+            const sortedPlayers = [...gameRoom.players].sort((a, b) => b.score - a.score);
+            const rankedPlayers = sortedPlayers.map((player, index) => ({
+                id: player.id,
+                name: player.name,
+                score: player.score,
+                rank: index + 1
+            }));
+            
+            socket.emit('game-over', { players: rankedPlayers });
+        }
+    });
+
     // When a player disconnects
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
         
         // Check if this socket was a host or player in any game
         Object.keys(gameRooms).forEach(gameCode => {
-            // If host disconnected, notify players and end game
+            // If host disconnected, notify players but keep game running
             if (gameRooms[gameCode].hostSocket === socket.id) {
                 io.to(gameCode).emit('host-disconnected');
-                delete gameRooms[gameCode];
+                
+                // Keep the game for a while in case the host reconnects
+                gameRooms[gameCode].hostDisconnected = true;
             } 
-            // If player disconnected, notify host
+            // If player disconnected, mark them as disconnected but keep in the game
             else {
                 const playerIndex = gameRooms[gameCode].players.findIndex(p => p.socketId === socket.id);
                 if (playerIndex !== -1) {
                     const player = gameRooms[gameCode].players[playerIndex];
-                    gameRooms[gameCode].players.splice(playerIndex, 1);
-                    socket.to(gameRooms[gameCode].hostSocket).emit('player-left', { 
+                    player.disconnected = true;
+                    
+                    // Notify host about disconnection
+                    socket.to(gameRooms[gameCode].hostSocket).emit('player-disconnected', { 
                         playerId: player.id,
                         playerName: player.name
                     });

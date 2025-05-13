@@ -26,6 +26,9 @@ router.post('/join-by-id', quizController.joinQuizById);
 router.get('/lobby/:code', quizController.gameLobby);
 router.get('/public-games', quizController.getPublicGames);
 
+// Add new route for player's game view
+router.get('/play-game/:code', quizController.playGameAsPlayer);
+
 // Delete routes - adding explicit admin permission path
 router.delete('/delete/:id', isAuthenticated, quizController.deleteQuiz);
 router.get('/delete/:id', isAuthenticated, quizController.deleteQuiz);

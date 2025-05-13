@@ -1,0 +1,876 @@
+<%- include('./partials/header') %>
+<link rel="stylesheet" href="/css/kahoot-dark.css">
+
+<div class="player-container">
+    <div class="player-header">
+        <h1><span id="quizTitle">Loading quiz...</span></h1>
+        <div class="game-info">
+            <span class="player-name"><%= playerName %></span>
+            <span class="game-code"><%= gameCode %></span>
+        </div>
+        <div class="waiting-message" id="waitingMessage">Waiting for the host to start the game...</div>
+        <div class="question-info" id="questionInfo" style="display:none;">
+            <div class="question-counter">Question <span id="currentQuestion">1</span>/<span id="totalQuestions">?</span></div>
+            <div class="score-display">Score: <span id="playerScore">0</span></div>
+        </div>
+        <div class="timer-container" id="timerContainer" style="display:none;">
+            <div class="timer-bar" id="timerBar"></div>
+            <div class="timer-text" id="timerText">30</div>
+        </div>
+    </div>
+    
+    <div class="waiting-area" id="waitingArea">
+        <div class="spinner"></div>
+        <p>Ready to play!</p>
+    </div>
+    
+    <div class="question-area" id="questionArea" style="display:none;">
+        <div id="questionText" class="question-text">Loading question...</div>
+        
+        <div class="options-grid">
+            <button class="option-button red" id="option0" data-index="0">
+                <div class="option-symbol">▲</div>
+                <div class="option-text">Option 1</div>
+            </button>
+            <button class="option-button blue" id="option1" data-index="1">
+                <div class="option-symbol">◆</div>
+                <div class="option-text">Option 2</div>
+            </button>
+            <button class="option-button yellow" id="option2" data-index="2">
+                <div class="option-symbol">●</div>
+                <div class="option-text">Option 3</div>
+            </button>
+            <button class="option-button green" id="option3" data-index="3">
+                <div class="option-symbol">■</div>
+                <div class="option-text">Option 4</div>
+            </button>
+        </div>
+    </div>
+    
+    <div class="answer-status" id="answerStatus" style="display:none;">
+        <div class="answer-icon">
+            <i id="answerIcon" class="fas fa-check"></i>
+        </div>
+        <div id="answerMessage" class="answer-message">Answer received!</div>
+        <div id="answerPoints" class="answer-points">+0 points</div>
+        <div class="waiting-next">Waiting for next question...</div>
+    </div>
+    
+    <div class="results-area" id="resultsArea" style="display:none;">
+        <h2>Game Over!</h2>
+        <div class="final-rank">
+            <div class="rank-title">Your Rank</div>
+            <div class="rank-display">#<span id="playerRank">?</span></div>
+            <div class="final-score">Score: <span id="finalScore">0</span></div>
+        </div>
+        <div class="top-players" id="topPlayers">
+            <!-- Top players will be added here -->
+        </div>
+        <div class="result-actions">
+            <a href="/quiz/join" class="btn-join-new">Play Another Quiz</a>
+            <a href="/" class="btn-back-home">Back to Home</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: var(--dark-bg);
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        overflow: hidden;
+    }
+    
+    .player-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .player-header {
+        background-color: rgba(45, 45, 45, 0.85);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .player-header h1 {
+        font-size: 1.8rem;
+        margin: 0 0 10px 0;
+        color: white;
+        text-align: center;
+    }
+    
+    .game-info {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+        font-size: 1.1rem;
+        color: #ddd;
+    }
+    
+    .waiting-message {
+        text-align: center;
+        color: var(--kahoot-light-purple);
+        font-size: 1.1rem;
+        margin-top: 10px;
+        animation: pulse 1.5s infinite;
+    }
+    
+    .timer-container {
+        width: 100%;
+        height: 12px;
+        background-color: #444;
+        border-radius: 6px;
+        margin-top: 10px;
+        position: relative;
+    }
+    
+    .timer-bar {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, var(--kahoot-purple) 0%, var(--kahoot-blue) 100%);
+        border-radius: 6px;
+        transition: width 1s linear;
+    }
+    
+    .timer-text {
+        position: absolute;
+        right: 10px;
+        top: -25px;
+        color: #fff;
+        font-weight: bold;
+    }
+    
+    .waiting-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid rgba(142, 82, 245, 0.3);
+        border-top-color: var(--kahoot-light-purple);
+        border-radius: 50%;
+        animation: spin 1s infinite linear;
+        margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .question-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .question-text {
+        background-color: var(--dark-card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        font-size: 1.5rem;
+        color: white;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .options-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .option-button {
+        border: none;
+        border-radius: 12px;
+        padding: 25px 15px;
+        font-size: 1.2rem;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        min-height: 100px;
+    }
+    
+    .option-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .option-button:active {
+        transform: translateY(0);
+    }
+    
+    .option-button.red { background-color: var(--kahoot-red); }
+    .option-button.blue { background-color: var(--kahoot-blue); }
+    .option-button.yellow { background-color: var(--kahoot-yellow); }
+    .option-button.green { background-color: var(--kahoot-green); }
+    
+    .option-symbol {
+        font-size: 24px;
+        margin-right: 15px;
+        background: white;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 5px;
+        color: #333;
+    }
+    
+    .option-button .option-text {
+        flex: 1;
+        text-align: left;
+    }
+    
+    .option-button.selected {
+        border: 4px solid white;
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        transform: scale(0.98);
+    }
+    
+    .option-button.disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .answer-status {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(30, 30, 30, 0.95);
+        z-index: 100;
+    }
+    
+    .answer-icon {
+        font-size: 72px;
+        margin-bottom: 20px;
+        animation: bounceIn 0.5s;
+    }
+    
+    .answer-icon .fa-check { color: var(--kahoot-green); }
+    .answer-icon .fa-times { color: var(--kahoot-red); }
+    
+    .answer-message {
+        font-size: 2rem;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 10px;
+    }
+    
+    .answer-points {
+        font-size: 1.5rem;
+        color: var(--kahoot-light-purple);
+        margin-bottom: 30px;
+    }
+    
+    .waiting-next {
+        color: var(--dark-text-secondary);
+        animation: pulse 1.5s infinite;
+    }
+    
+    .results-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .results-area h2 {
+        color: white;
+        font-size: 2.5rem;
+        margin-bottom: 30px;
+    }
+    
+    .final-rank {
+        margin-bottom: 30px;
+    }
+    
+    .rank-title {
+        color: var(--dark-text-secondary);
+        font-size: 1.2rem;
+        margin-bottom: 5px;
+    }
+    
+    .rank-display {
+        font-size: 3.5rem;
+        font-weight: bold;
+        color: var(--kahoot-light-purple);
+        margin-bottom: 10px;
+    }
+    
+    .final-score {
+        font-size: 1.5rem;
+        color: white;
+    }
+    
+    .top-players {
+        background-color: var(--dark-card-bg);
+        border-radius: 10px;
+        padding: 15px;
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 30px;
+    }
+    
+    .player-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--dark-border);
+    }
+    
+    .player-row:last-child {
+        border-bottom: none;
+    }
+    
+    .player-row.highlight {
+        background-color: rgba(142, 82, 245, 0.2);
+        border-radius: 5px;
+    }
+    
+    .player-rank {
+        width: 30px;
+        font-weight: bold;
+        color: var(--kahoot-light-purple);
+    }
+    
+    .player-name {
+        flex: 1;
+        text-align: left;
+        margin: 0 10px;
+        color: white;
+    }
+    
+    .player-score {
+        color: var(--dark-text-secondary);
+    }
+    
+    .result-actions {
+        display: flex;
+        gap: 15px;
+    }
+    
+    .btn-join-new, .btn-back-home {
+        background-color: var(--kahoot-green);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .btn-back-home {
+        background-color: var(--dark-input-bg);
+    }
+    
+    .btn-join-new:hover, .btn-back-home:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.7; }
+        50% { opacity: 1; }
+        100% { opacity: 0.7; }
+    }
+    
+    @keyframes bounceIn {
+        0% { transform: scale(0); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+    
+    /* Responsive adjustments for mobile */
+    @media (max-width: 768px) {
+        .options-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        
+        .option-button {
+            padding: 15px;
+            font-size: 1rem;
+            min-height: 70px;
+        }
+        
+        .question-text {
+            font-size: 1.2rem;
+            padding: 15px;
+        }
+    }
+    
+    /* Add score update animation */
+    @keyframes scoreUpdate {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.5); color: var(--kahoot-green); }
+        100% { transform: scale(1); }
+    }
+    
+    .score-update {
+        animation: scoreUpdate 0.8s ease-in-out;
+    }
+    
+    /* Add host disconnect message style */
+    .host-disconnect-message {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: rgba(30, 30, 30, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-align: center;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideDown 0.3s;
+    }
+    
+    .host-disconnect-message i {
+        color: var(--kahoot-yellow);
+    }
+    
+    @keyframes slideDown {
+        from { transform: translate(-50%, -50px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+</style>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Connect to Socket.io
+        const socket = io();
+        
+        // Get game data from server
+        const gameCode = '<%= gameCode %>';
+        const playerName = '<%= playerName %>';
+        const playerId = '<%= locals.userId || "" %>';
+        
+        // UI Elements
+        const waitingArea = document.getElementById('waitingArea');
+        const questionArea = document.getElementById('questionArea');
+        const answerStatus = document.getElementById('answerStatus');
+        const resultsArea = document.getElementById('resultsArea');
+        const waitingMessage = document.getElementById('waitingMessage');
+        const questionInfo = document.getElementById('questionInfo');
+        const timerContainer = document.getElementById('timerContainer');
+        const timerBar = document.getElementById('timerBar');
+        const timerText = document.getElementById('timerText');
+        const questionText = document.getElementById('questionText');
+        const currentQuestion = document.getElementById('currentQuestion');
+        const totalQuestions = document.getElementById('totalQuestions');
+        const playerScore = document.getElementById('playerScore');
+        const quizTitle = document.getElementById('quizTitle');
+        
+        // Answer feedback elements
+        const answerIcon = document.getElementById('answerIcon');
+        const answerMessage = document.getElementById('answerMessage');
+        const answerPoints = document.getElementById('answerPoints');
+        
+        // Results elements
+        const playerRank = document.getElementById('playerRank');
+        const finalScore = document.getElementById('finalScore');
+        const topPlayers = document.getElementById('topPlayers');
+        
+        // Option buttons
+        const optionButtons = [
+            document.getElementById('option0'),
+            document.getElementById('option1'),
+            document.getElementById('option2'),
+            document.getElementById('option3')
+        ];
+        
+        // Game state
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timeLeft = 0;
+        let timer = null;
+        let questionData = null;
+        let answered = false;
+        let totalQuestionsCount = 0;
+        let isGameActive = false;
+        
+        // Debug function - add this to help troubleshoot
+        function debugLog(message) {
+            console.log(`[PLAYER DEBUG] ${message}`);
+        }
+        
+        debugLog("Player view initialized");
+        
+        // Join the game
+        socket.emit('join-game', {
+            gameCode,
+            playerName,
+            playerId
+        });
+        
+        // Listen for game events
+        socket.on('join-success', (data) => {
+            debugLog('Successfully joined game: ' + JSON.stringify(data));
+            quizTitle.textContent = data.quizTitle || 'Quiz Game';
+            
+            // If game is already in progress, check the current question
+            if (data.gameInProgress) {
+                debugLog('Game already in progress, catching up...');
+                isGameActive = true;
+                currentQuestionIndex = data.currentQuestionIndex || 0;
+                
+                // Show a message that we're catching up
+                waitingMessage.textContent = "Game in progress. Catching up...";
+                
+                // Request the current question data
+                socket.emit('get-question', {
+                    gameCode,
+                    questionIndex: currentQuestionIndex
+                });
+            }
+        });
+        
+        socket.on('join-failed', (data) => {
+            debugLog('Failed to join game: ' + data.message);
+            alert('Failed to join game: ' + data.message);
+            window.location.href = '/quiz/join';
+        });
+        
+        socket.on('game-started', () => {
+            debugLog('Game started event received');
+            isGameActive = true;
+            waitingMessage.textContent = 'Get ready! Game starting...';
+            
+            // Reset game state when starting fresh
+            currentQuestionIndex = 0;
+            score = 0;
+            playerScore.textContent = '0';
+            
+            // The host will send a question-started event next, so we don't need to do anything else here
+        });
+        
+        socket.on('question-started', (data) => {
+            debugLog('Question started event received: ' + JSON.stringify(data));
+            currentQuestionIndex = data.questionIndex;
+            
+            // Reset for new question
+            resetQuestion();
+            
+            // Request question data from server
+            socket.emit('get-question', {
+                gameCode,
+                questionIndex: currentQuestionIndex
+            });
+        });
+        
+        socket.on('question-data', (data) => {
+            debugLog('Received question data: ' + JSON.stringify(data));
+            questionData = data;
+            totalQuestionsCount = data.totalQuestions;
+            
+            // Update UI with question data
+            loadQuestion(data);
+        });
+        
+        socket.on('question-ended', () => {
+            debugLog('Question ended event received');
+            clearInterval(timer);
+            
+            // If not answered, show timeout
+            if (!answered) {
+                showAnswerFeedback(false, 0, 'Time\'s Up!');
+            }
+        });
+        
+        socket.on('answer-result', (data) => {
+            debugLog('Answer result received: ' + JSON.stringify(data));
+            
+            // Update feedback with actual result
+            showAnswerFeedback(data.isCorrect, data.points, data.isCorrect ? 'Correct!' : 'Incorrect!');
+            
+            // Update score if correct
+            if (data.isCorrect) {
+                score += data.points;
+                playerScore.textContent = score;
+                
+                // Add success animation to the score
+                playerScore.classList.add('score-update');
+                setTimeout(() => {
+                    playerScore.classList.remove('score-update');
+                }, 1000);
+            }
+        });
+        
+        socket.on('game-over', (data) => {
+            debugLog('Game over event received: ' + JSON.stringify(data));
+            
+            // Show final results
+            showResults(data);
+            isGameActive = false;
+        });
+        
+        // Function to reset question state
+        function resetQuestion() {
+            debugLog('Resetting question state');
+            answered = false;
+            clearInterval(timer);
+            
+            // Reset UI
+            waitingArea.style.display = 'none';
+            questionArea.style.display = 'block';
+            answerStatus.style.display = 'none';
+            questionInfo.style.display = 'block';
+            timerContainer.style.display = 'block';
+            
+            // Reset option buttons
+            optionButtons.forEach(button => {
+                button.classList.remove('selected', 'disabled');
+                button.disabled = false;
+                button.style.display = 'flex'; // Make all visible initially
+            });
+        }
+        
+        // Function to load question data
+        function loadQuestion(data) {
+            debugLog('Loading question data');
+            questionText.textContent = data.questionText;
+            currentQuestion.textContent = currentQuestionIndex + 1;
+            totalQuestions.textContent = totalQuestionsCount;
+            
+            // Set options text
+            for (let i = 0; i < data.options.length && i < optionButtons.length; i++) {
+                optionButtons[i].querySelector('.option-text').textContent = data.options[i].text;
+                optionButtons[i].style.display = 'flex';
+            }
+            
+            // Hide unused options
+            for (let i = data.options.length; i < optionButtons.length; i++) {
+                optionButtons[i].style.display = 'none';
+            }
+            
+            // Start timer
+            timeLeft = data.timeLimit || 30;
+            startTimer();
+        }
+        
+        // Function to start timer countdown
+        function startTimer() {
+            debugLog('Starting timer with ' + timeLeft + ' seconds');
+            timerText.textContent = timeLeft;
+            timerBar.style.width = '100%';
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                timerText.textContent = timeLeft;
+                
+                // Update timer bar
+                const percentage = (timeLeft / (questionData.timeLimit || 30)) * 100;
+                timerBar.style.width = `${percentage}%`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    if (!answered) {
+                        // Time's up without answering
+                        disableOptions();
+                        
+                        // Tell server we didn't answer
+                        socket.emit('submit-answer', {
+                            gameCode,
+                            questionIndex: currentQuestionIndex,
+                            answerIndex: -1,
+                            playerId: playerId || socket.id
+                        });
+                        
+                        showAnswerFeedback(false, 0, 'Time\'s Up!');
+                    }
+                }
+            }, 1000);
+        }
+        
+        // Function to handle answer selection
+        function selectAnswer(index) {
+            debugLog('Selected answer ' + index);
+            if (answered) return;
+            answered = true;
+            clearInterval(timer);
+            
+            // Mark selected option
+            optionButtons.forEach(button => {
+                button.classList.add('disabled');
+                button.disabled = true;
+            });
+            optionButtons[index].classList.add('selected');
+            
+            // Send answer to server
+            socket.emit('submit-answer', {
+                gameCode,
+                questionIndex: currentQuestionIndex,
+                answerIndex: index,
+                playerId: playerId || socket.id,
+                timeLeft: timeLeft // Send remaining time for score calculation
+            });
+            
+            // Show temporary answer received message
+            showAnswerFeedback(null, null, 'Answer received!');
+        }
+        
+        // Function to disable all options
+        function disableOptions() {
+            optionButtons.forEach(button => {
+                button.classList.add('disabled');
+                button.disabled = true;
+            });
+        }
+        
+        // Function to show answer feedback
+        function showAnswerFeedback(isCorrect, points, message) {
+            debugLog('Showing answer feedback: ' + message);
+            questionArea.style.display = 'none';
+            answerStatus.style.display = 'flex';
+            
+            // If we don't know if correct yet, show neutral message
+            if (isCorrect === null) {
+                answerIcon.className = 'fas fa-check-circle';
+                answerIcon.style.color = 'var(--kahoot-light-purple)';
+                answerMessage.textContent = message || 'Answer received!';
+                answerPoints.textContent = '';
+            } else if (isCorrect) {
+                answerIcon.className = 'fas fa-check';
+                answerIcon.style.color = 'var(--kahoot-green)';
+                answerMessage.textContent = message || 'Correct!';
+                answerPoints.textContent = `+${points} points`;
+                
+                // Update score
+                score += points;
+                playerScore.textContent = score;
+                
+                // Add success animation to the score
+                playerScore.classList.add('score-update');
+                setTimeout(() => {
+                    playerScore.classList.remove('score-update');
+                }, 1000);
+            } else {
+                answerIcon.className = 'fas fa-times';
+                answerIcon.style.color = 'var(--kahoot-red)';
+                answerMessage.textContent = message || 'Incorrect!';
+                answerPoints.textContent = '+0 points';
+            }
+        }
+        
+        // Function to show final results
+        function showResults(data) {
+            debugLog('Showing final results');
+            // Update UI elements
+            waitingArea.style.display = 'none';
+            questionArea.style.display = 'none';
+            answerStatus.style.display = 'none';
+            resultsArea.style.display = 'flex';
+            
+            // Set player's results
+            const playerData = data.players.find(p => p.id === (playerId || socket.id));
+            
+            if (playerData) {
+                playerRank.textContent = playerData.rank;
+                finalScore.textContent = playerData.score;
+            } else {
+                playerRank.textContent = "-";
+                finalScore.textContent = score;
+            }
+            
+            // Display top players
+            topPlayers.innerHTML = '';
+            const top5Players = data.players.slice(0, 5);
+            
+            top5Players.forEach((player, index) => {
+                const isCurrentPlayer = player.id === (playerId || socket.id);
+                const playerRow = document.createElement('div');
+                playerRow.className = `player-row ${isCurrentPlayer ? 'highlight' : ''}`;
+                
+                playerRow.innerHTML = `
+                    <div class="player-rank">#${player.rank}</div>
+                    <div class="player-name">${player.name}${isCurrentPlayer ? ' (You)' : ''}</div>
+                    <div class="player-score">${player.score}</div>
+                `;
+                
+                topPlayers.appendChild(playerRow);
+            });
+        }
+        
+        // Add event listeners to option buttons
+        optionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const index = parseInt(this.dataset.index);
+                selectAnswer(index);
+            });
+        });
+        
+        // Add reconnection logic for players who refresh or reconnect
+        socket.on('reconnect', () => {
+            debugLog('Socket reconnected - rejoining game');
+            socket.emit('join-game', {
+                gameCode,
+                playerName,
+                playerId: playerId || socket.id
+            });
+        });
+        
+        // Get game state on connect if game is active
+        socket.on('connect', () => {
+            debugLog('Socket connected');
+            if (isGameActive) {
+                socket.emit('get-game-state', { gameCode });
+            }
+        });
+
+        // Handle host disconnection
+        socket.on('host-disconnected', () => {
+            debugLog('Host disconnected');
+            // Show a message but keep the current view
+            // This allows the game to continue if host reconnects
+            const hostDisconnectMsg = document.createElement('div');
+            hostDisconnectMsg.className = 'host-disconnect-message';
+            hostDisconnectMsg.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Host disconnected. Waiting for reconnection...</p>
+            `;
+            document.body.appendChild(hostDisconnectMsg);
+            
+            setTimeout(() => {
+                hostDisconnectMsg.remove();
+            }, 5000);
+        });
+    });
+</script>
+
+<%- include('./partials/footer') %>

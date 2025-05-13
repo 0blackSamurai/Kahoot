@@ -887,6 +887,9 @@
         function showQuestionResults() {
             clearInterval(timer);
             
+            // Notify players that the question has ended
+            socket.emit('end-question', { gameCode });
+            
             // Highlight correct options
             const question = quizData.questions[currentQuestionIndex];
             for (let i = 0; i < question.options.length && i < 4; i++) {
@@ -921,6 +924,9 @@
             
             // Sort players by score
             const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+            
+            // Notify all players about game end
+            socket.emit('end-game', { gameCode });
             
             // Update podium
             if (sortedPlayers.length > 0) {

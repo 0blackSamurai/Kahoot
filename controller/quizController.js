@@ -658,12 +658,92 @@ exports.gameLobby = async (req, res) => {
     
     const game = global.activeGames[gameCode];
     
+    // Get player name from query params or session
+    let playerName = req.query.playerName;
+    
+    // If no player name in query, check if user is authenticated
+    if (!playerName && req.user) {
+        playerName = req.user.username;
+    }
+    
+    // If still no player name, redirect to join page
+    if (!playerName) {
+        return res.redirect('/quiz/join');
+    }
+    
     // Render the lobby view
     res.render('lobby', {
         title: 'Game Lobby',
         gameCode,
         quiz: game.quiz,
-        players: game.players
+        players: game.players,
+        playerName: playerName
+    });
+};
+
+// Add this new handler for player game view
+exports.playGameAsPlayer = async (req, res) => {
+    const gameCode = req.params.code;
+    
+    // Check if the game exists
+    if (!global.activeGames || !global.activeGames[gameCode]) {
+        return res.status(404).render('error', {
+            title: 'Game Not Found',
+            message: 'The game could not be found. Please check your game code.',
+            error: { status: 404 }
+        });
+    }
+    
+    const game = global.activeGames[gameCode];
+    
+    // Get player info
+    let playerName = '';
+    let playerId = '';
+    
+    if (req.user) {
+        // Authenticated user
+        playerName = req.user.username;
+        playerId = req.user.userId;
+    } else if (req.query.playerName) {
+        // Player name from query parameter
+        playerName = req.query.playerName;
+    } else if (req.cookies.playerName) {
+        // Player name from cookie
+        playerName = req.cookies.playerName;
+    } else {
+        // No player identified, redirect to join page
+        return res.redirect('/quiz/join');
+    }
+    
+    // Set player name cookie for potential reconnection
+    res.cookie('playerName', playerName, { maxAge: 3600000 }); // 1 hour
+    
+    // Find player in game or the game is now in playing state
+    const playerExists = game.players.some(p => 
+        (req.user && p.id === req.user.userId) || 
+        (!req.user && p.name === playerName)
+    );
+    
+    if (!playerExists && game.status !== 'waiting') {
+        // If game already started and player not found, show error
+        return res.status(403).render('error', {
+            title: 'Cannot Join Game',
+            message: 'This game has already started. You cannot join at this point.',
+            error: { status: 403 }
+        });
+    }
+    
+    // If player doesn't exist but game is in waiting, redirect to lobby
+    if (!playerExists && game.status === 'waiting') {
+        return res.redirect(`/quiz/lobby/${gameCode}?playerName=${encodeURIComponent(playerName)}`);
+    }
+    
+    // Render player view
+    res.render('player', {
+        title: 'Playing Quiz',
+        gameCode,
+        playerName,
+        gameTitle: game.quiz.title
     });
 };
 

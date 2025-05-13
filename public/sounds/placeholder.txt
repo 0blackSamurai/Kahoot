@@ -1,0 +1,6 @@
+This folder contains sound effects for the Kahoot clone.
+The actual sound files should be added here, with names like:
+- player-joined.mp3
+- correct-answer.mp3
+- question-end.mp3
+- game-end.mp3
