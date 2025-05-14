@@ -125,9 +125,19 @@
                     <option value="no-points">No points</option>
                 </select>
             </div>
+            <div class="setting-item">
+                <div class="setting-label">Question Type</div>
+                <select id="q{QID}_type" class="time-selector question-type-selector">
+                    <option value="multiple-choice" selected>Multiple Choice</option>
+                    <option value="text-answer">Write The Word</option>
+                    <option value="ordering">Put In Order</option>
+                    <option value="true-false">True/False</option>
+                </select>
+            </div>
         </div>
         
-        <div class="options-container">
+        <!-- Multiple Choice Question (default) -->
+        <div class="options-container multiple-choice-container">
             <label>Options*</label>
             <p class="help-text">Select the correct answer(s)</p>
             
@@ -158,6 +168,70 @@
             <button type="button" class="btn-add-option">
                 <i class="fas fa-plus"></i> Add Option
             </button>
+        </div>
+        
+        <!-- Text Answer Question (hidden by default) -->
+        <div class="options-container text-answer-container" style="display:none">
+            <label>Correct Answer*</label>
+            <p class="help-text">Enter the text that will be considered correct (case insensitive)</p>
+            
+            <div class="text-answer-input">
+                <input type="text" class="form-control correct-text-answer" placeholder="Enter correct answer text" required>
+                <div class="text-answer-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="exact-match" checked>
+                        Require exact match
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" class="case-sensitive">
+                        Case sensitive
+                    </label>
+                </div>
+                <p class="help-text">Alternative answers (optional, one per line):</p>
+                <textarea class="form-control alternative-answers" placeholder="Add alternative correct answers, one per line"></textarea>
+            </div>
+        </div>
+        
+        <!-- Ordering Question (hidden by default) -->
+        <div class="options-container ordering-container" style="display:none">
+            <label>Items to Order*</label>
+            <p class="help-text">Add items in the correct order. Players will need to arrange them correctly.</p>
+            
+            <div class="ordering-items">
+                <div class="ordering-item">
+                    <div class="ordering-number">1</div>
+                    <input type="text" class="form-control ordering-text" placeholder="First item" required>
+                    <button type="button" class="btn-icon delete-ordering-item" title="Delete Item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="ordering-item">
+                    <div class="ordering-number">2</div>
+                    <input type="text" class="form-control ordering-text" placeholder="Second item" required>
+                    <button type="button" class="btn-icon delete-ordering-item" title="Delete Item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <button type="button" class="btn-add-ordering-item">
+                <i class="fas fa-plus"></i> Add Item
+            </button>
+        </div>
+        
+        <!-- True/False Question (hidden by default) -->
+        <div class="options-container true-false-container" style="display:none">
+            <label>Correct Answer*</label>
+            <div class="true-false-options">
+                <label class="radio-label">
+                    <input type="radio" name="tf{QID}" class="true-option" value="true">
+                    True
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="tf{QID}" class="false-option" value="false">
+                    False
+                </label>
+            </div>
         </div>
     </div>
 </div>
@@ -274,12 +348,70 @@
             }
         });
         
-        // Event Delegation for Questions Navigation
-        questionsNavList.addEventListener('click', function(e) {
-            const questionItem = e.target.closest('.question-item');
-            if (questionItem) {
-                const qid = questionItem.dataset.questionId;
-                showQuestion(qid);
+        // Add change event listeners for question type selectors
+        questionsContainer.addEventListener('change', function(e) {
+            if (e.target.classList.contains('question-type-selector')) {
+                const questionCard = e.target.closest('.question-card');
+                const questionType = e.target.value;
+                
+                // Hide all option containers first
+                const optionContainers = questionCard.querySelectorAll('.options-container');
+                optionContainers.forEach(container => {
+                    container.style.display = 'none';
+                });
+                
+                // Show the selected option container
+                switch (questionType) {
+                    case 'multiple-choice':
+                        questionCard.querySelector('.multiple-choice-container').style.display = 'block';
+                        break;
+                    case 'text-answer':
+                        questionCard.querySelector('.text-answer-container').style.display = 'block';
+                        break;
+                    case 'ordering':
+                        questionCard.querySelector('.ordering-container').style.display = 'block';
+                        break;
+                    case 'true-false':
+                        questionCard.querySelector('.true-false-container').style.display = 'block';
+                        break;
+                }
+            }
+        });
+        
+        // Add event handler for ordering items
+        questionsContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-add-ordering-item')) {
+                const orderingItems = e.target.closest('.ordering-container').querySelector('.ordering-items');
+                const itemCount = orderingItems.children.length;
+                
+                const newItem = document.createElement('div');
+                newItem.className = 'ordering-item';
+                newItem.innerHTML = `
+                    <div class="ordering-number">${itemCount + 1}</div>
+                    <input type="text" class="form-control ordering-text" placeholder="Item ${itemCount + 1}" required>
+                    <button type="button" class="btn-icon delete-ordering-item" title="Delete Item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                orderingItems.appendChild(newItem);
+            }
+            
+            if (e.target.closest('.delete-ordering-item')) {
+                const item = e.target.closest('.ordering-item');
+                const orderingItems = item.parentElement;
+                
+                if (orderingItems.children.length <= 2) {
+                    alert('You need at least two items in an ordering question.');
+                    return;
+                }
+                
+                item.remove();
+                
+                // Update ordering numbers
+                Array.from(orderingItems.children).forEach((item, idx) => {
+                    item.querySelector('.ordering-number').textContent = idx + 1;
+                    item.querySelector('.ordering-text').placeholder = `Item ${idx + 1}`;
+                });
             }
         });
         
@@ -412,21 +544,60 @@
             questionCards.forEach(card => {
                 const questionText = card.querySelector('.question-text').value;
                 const timeLimit = parseInt(card.querySelector('.time-limit').value) || 30;
-                const options = [];
+                const questionType = card.querySelector('.question-type-selector').value;
                 
-                const optionItems = card.querySelectorAll('.option-item');
-                optionItems.forEach(item => {
-                    options.push({
-                        text: item.querySelector('.option-text').value,
-                        isCorrect: item.querySelector('.option-correct').checked
-                    });
-                });
-                
-                questions.push({
+                let questionData = {
                     questionText,
                     timeLimit,
-                    options
-                });
+                    questionType
+                };
+                
+                // Handle different question types
+                switch (questionType) {
+                    case 'multiple-choice':
+                        const options = [];
+                        const optionItems = card.querySelectorAll('.multiple-choice-container .option-item');
+                        optionItems.forEach(item => {
+                            options.push({
+                                text: item.querySelector('.option-text').value,
+                                isCorrect: item.querySelector('.option-correct').checked
+                            });
+                        });
+                        questionData.options = options;
+                        break;
+                        
+                    case 'text-answer':
+                        const correctAnswer = card.querySelector('.correct-text-answer').value;
+                        const exactMatch = card.querySelector('.exact-match').checked;
+                        const caseSensitive = card.querySelector('.case-sensitive').checked;
+                        const alternativeAnswers = card.querySelector('.alternative-answers').value
+                            .split('\n')
+                            .filter(answer => answer.trim() !== '');
+                        
+                        questionData.textAnswer = {
+                            correctAnswer,
+                            exactMatch,
+                            caseSensitive,
+                            alternativeAnswers
+                        };
+                        break;
+                        
+                    case 'ordering':
+                        const orderItems = [];
+                        const orderingItems = card.querySelectorAll('.ordering-item');
+                        orderingItems.forEach(item => {
+                            orderItems.push(item.querySelector('.ordering-text').value);
+                        });
+                        questionData.orderItems = orderItems;
+                        break;
+                        
+                    case 'true-false':
+                        const isTrue = card.querySelector('.true-option').checked;
+                        questionData.isTrueCorrect = isTrue;
+                        break;
+                }
+                
+                questions.push(questionData);
             });
             
             return questions;
@@ -438,5 +609,84 @@
     });
 </script>
 
+<style>
+    /* Additional styles for new question types */
+    .text-answer-input, .ordering-items {
+        margin-top: 15px;
+    }
+    
+    .text-answer-options {
+        margin: 10px 0;
+        display: flex;
+        gap: 20px;
+    }
+    
+    .ordering-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        background-color: var(--dark-secondary-bg);
+        padding: 10px;
+        border-radius: 8px;
+    }
+    
+    .ordering-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: var(--kahoot-light-purple);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-weight: bold;
+    }
+    
+    .ordering-text {
+        flex: 1;
+    }
+    
+    .btn-add-ordering-item {
+        margin-top: 10px;
+        background-color: var(--dark-input-bg);
+        color: var(--dark-text);
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .btn-add-ordering-item:hover {
+        background-color: var(--dark-hover);
+    }
+    
+    .radio-label {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 20px;
+        cursor: pointer;
+    }
+    
+    .radio-label input {
+        margin-right: 8px;
+    }
+    
+    .true-false-options {
+        margin-top: 15px;
+        background-color: var(--dark-secondary-bg);
+        padding: 15px;
+        border-radius: 8px;
+    }
+    
+    .alternative-answers {
+        margin-top: 10px;
+        min-height: 80px;
+    }
+</style>
+
+<%- include('./partials/footer.ejs') %>
 </body>
 </html>

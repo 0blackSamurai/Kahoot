@@ -27,7 +27,7 @@ body.dark-mode {
 }
 
 body {
-    background-color: var(--bg-color);
+    background-color: var(--kahoot-purple);
     color: var(--text-color);
     transition: background-color 0.3s, color 0.3s;
 }

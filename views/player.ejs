@@ -853,6 +853,46 @@
             }
         });
 
+        // Enhance reconnection logic
+        socket.on('connect', () => {
+            console.log('Socket connected with ID:', socket.id);
+            
+            // Store connection info in localStorage to help with reconnection
+            localStorage.setItem('gameCode', gameCode);
+            localStorage.setItem('playerName', playerName);
+            
+            // If we were previously connected and playing
+            if (isGameActive) {
+                console.log('Reconnecting to game...');
+                
+                // Join the game again
+                socket.emit('join-game', {
+                    gameCode,
+                    playerName,
+                    playerId: playerId || localStorage.getItem('playerId') || socket.id
+                });
+                
+                // Get current game state
+                socket.emit('get-game-state', { gameCode });
+            }
+        });
+
+        // Handle disconnection
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server. Attempting to reconnect...');
+            // The socket.io client will automatically try to reconnect
+        });
+
+        // Detect when reconnection fails
+        socket.io.on('reconnect_failed', () => {
+            alert('Failed to reconnect to the game server. Please refresh the page.');
+        });
+
+        // Track successful reconnection attempts
+        socket.io.on('reconnect', (attemptNumber) => {
+            console.log(`Reconnected to server after ${attemptNumber} attempts`);
+        });
+
         // Handle host disconnection
         socket.on('host-disconnected', () => {
             debugLog('Host disconnected');

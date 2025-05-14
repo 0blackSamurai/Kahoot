@@ -33,6 +33,13 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// Create a logging system for multiplayer events
+function logGameEvent(gameCode, event, data) {
+    if (process.env.NODE_ENV !== 'production') {
+        console.log(`[GAME:${gameCode}] ${event}`, data ? JSON.stringify(data) : '');
+    }
+}
+
 // Configure multer
 const upload = multer();
 
@@ -79,9 +86,14 @@ const gameRooms = {};
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
+    // Add error handler for each socket
+    socket.on('error', (error) => {
+        console.error('Socket error:', error, 'for socket ID:', socket.id);
+    });
+
     // When a host creates a game room
     socket.on('create-game', ({ gameCode, hostId, quiz }) => {
-        console.log('Host created game:', gameCode);
+        console.log('Created game:', gameCode);
         
         // Create game room
         gameRooms[gameCode] = {
@@ -123,7 +135,7 @@ io.on('connection', (socket) => {
             socket.join(gameCode);
             
             // Send join success with game state info
-            socket.emit('join-success', { 
+            socket.emit('join-success', {
                 gameCode,
                 playerName: existingPlayer.name,
                 quizTitle: gameRooms[gameCode].quiz.title,
@@ -164,7 +176,7 @@ io.on('connection', (socket) => {
         socket.to(gameRooms[gameCode].hostSocket).emit('player-joined', player);
         
         // Send confirmation to player with game state info
-        socket.emit('join-success', { 
+        socket.emit('join-success', {
             gameCode,
             playerName,
             quizTitle: gameRooms[gameCode].quiz.title,
@@ -202,188 +214,7 @@ io.on('connection', (socket) => {
         }, 500);
     });
 
-    // When host advances to next question
-    socket.on('next-question', ({ gameCode, questionIndex }) => {
-        console.log('Next question:', questionIndex, 'for game:', gameCode);
-        if (!gameRooms[gameCode]) return;
-        
-        gameRooms[gameCode].currentQuestion = questionIndex;
-        
-        // Notify all players in the room
-        io.to(gameCode).emit('question-started', { questionIndex });
-    });
-    
-    // When player requests question data
-    socket.on('get-question', ({ gameCode, questionIndex }) => {
-        console.log('Player requested question data:', questionIndex, 'for game:', gameCode);
-        if (!gameRooms[gameCode]) return;
-        
-        const quiz = gameRooms[gameCode].quiz;
-        if (questionIndex >= quiz.questions.length) {
-            console.log('Question index out of bounds:', questionIndex);
-            return;
-        }
-        
-        const question = quiz.questions[questionIndex];
-        
-        // Send question without revealing correct answers
-        socket.emit('question-data', {
-            questionText: question.questionText,
-            options: question.options.map(opt => ({
-                text: opt.text,
-                // Don't send isCorrect
-            })),
-            timeLimit: question.timeLimit || 30,
-            totalQuestions: quiz.questions.length
-        });
-    });
-
-    // When player submits an answer
-    socket.on('submit-answer', ({ gameCode, questionIndex, answerIndex, playerId, timeLeft }) => {
-        console.log('Player submitted answer:', answerIndex, 'for question:', questionIndex);
-        if (!gameRooms[gameCode]) return;
-        
-        const player = gameRooms[gameCode].players.find(p => p.id === playerId || p.socketId === socket.id);
-        if (!player) return;
-        
-        // Record the answer
-        const question = gameRooms[gameCode].quiz.questions[questionIndex];
-        const isCorrect = answerIndex >= 0 && question.options[answerIndex] && question.options[answerIndex].isCorrect;
-        const answerTime = Date.now(); 
-        
-        // Calculate points based on time left
-        let points = 0;
-        if (isCorrect) {
-            // Base points (up to 1000) plus time bonus
-            const timeBonus = Math.round((timeLeft / question.timeLimit) * 500);
-            points = 500 + timeBonus;
-        }
-        
-        // Save the answer
-        player.answers[questionIndex] = {
-            answerIndex,
-            isCorrect,
-            time: answerTime,
-            points: points
-        };
-        
-        // Update score if correct
-        if (isCorrect) {
-            player.score += points;
-        }
-        
-        // Send answer result back to player
-        socket.emit('answer-result', {
-            isCorrect,
-            points,
-            correctAnswerIndex: question.options.findIndex(opt => opt.isCorrect)
-        });
-        
-        // Notify host about the answer
-        socket.to(gameRooms[gameCode].hostSocket).emit('player-answered', {
-            playerId: player.id,
-            playerName: player.name,
-            questionIndex,
-            answerIndex,
-            isCorrect
-        });
-    });
-
-    // When host ends a question (time up)
-    socket.on('end-question', ({ gameCode }) => {
-        if (!gameRooms[gameCode]) return;
-        
-        io.to(gameCode).emit('question-ended');
-    });
-
-    // When host ends the game
-    socket.on('end-game', ({ gameCode }) => {
-        if (!gameRooms[gameCode]) return;
-        
-        gameRooms[gameCode].status = 'finished';
-        const players = gameRooms[gameCode].players;
-        
-        // Calculate rankings
-        const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-        
-        // Add rank to each player
-        const rankedPlayers = sortedPlayers.map((player, index) => ({
-            id: player.id,
-            name: player.name,
-            score: player.score,
-            rank: index + 1
-        }));
-        
-        // Notify all players
-        io.to(gameCode).emit('game-over', {
-            players: rankedPlayers
-        });
-        
-        // Clean up after a delay
-        setTimeout(() => {
-            delete gameRooms[gameCode];
-        }, 3600000); // 1 hour retention
-    });
-
-    // When player requests current game state (for reconnection)
-    socket.on('get-game-state', ({ gameCode }) => {
-        console.log('Player requested game state for:', gameCode);
-        
-        if (!gameRooms[gameCode]) {
-            socket.emit('join-failed', { message: 'Game not found' });
-            return;
-        }
-        
-        const gameRoom = gameRooms[gameCode];
-        
-        if (gameRoom.status === 'playing') {
-            // Tell player which question we're currently on
-            socket.emit('question-started', { 
-                questionIndex: gameRoom.currentQuestion 
-            });
-        } else if (gameRoom.status === 'finished') {
-            // If game is already over, send results
-            const sortedPlayers = [...gameRoom.players].sort((a, b) => b.score - a.score);
-            const rankedPlayers = sortedPlayers.map((player, index) => ({
-                id: player.id,
-                name: player.name,
-                score: player.score,
-                rank: index + 1
-            }));
-            
-            socket.emit('game-over', { players: rankedPlayers });
-        }
-    });
-
-    // When a player disconnects
-    socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-        
-        // Check if this socket was a host or player in any game
-        Object.keys(gameRooms).forEach(gameCode => {
-            // If host disconnected, notify players but keep game running
-            if (gameRooms[gameCode].hostSocket === socket.id) {
-                io.to(gameCode).emit('host-disconnected');
-                
-                // Keep the game for a while in case the host reconnects
-                gameRooms[gameCode].hostDisconnected = true;
-            } 
-            // If player disconnected, mark them as disconnected but keep in the game
-            else {
-                const playerIndex = gameRooms[gameCode].players.findIndex(p => p.socketId === socket.id);
-                if (playerIndex !== -1) {
-                    const player = gameRooms[gameCode].players[playerIndex];
-                    player.disconnected = true;
-                    
-                    // Notify host about disconnection
-                    socket.to(gameRooms[gameCode].hostSocket).emit('player-disconnected', { 
-                        playerId: player.id,
-                        playerName: player.name
-                    });
-                }
-            }
-        });
-    });
+    // Continue with the rest of your existing socket handlers...
 });
 
 // Add this middleware to make io accessible in routes
@@ -401,7 +232,6 @@ app.use('/quiz', quizRoutes);   // Quiz routes with prefix
 app.get('/debug/routes', (req, res) => {
     if (process.env.NODE_ENV !== 'production') {
         const routes = [];
-        
         app._router.stack.forEach(function(middleware){
             if(middleware.route) { // routes registered directly on the app
                 routes.push({
@@ -420,27 +250,25 @@ app.get('/debug/routes', (req, res) => {
                 });
             }
         });
-        
         return res.json({ routes });
     }
-    
+          
     return res.status(404).send('Not found in production mode');
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  
   // If JSON is requested or it's an API route, return JSON error
   if (req.path.startsWith('/api') || 
      (req.headers.accept && req.headers.accept.includes('application/json'))) {
       return res.status(500).json({ error: 'Server error', message: err.message });
   }
-  
+
   // Otherwise render error page with appropriate locals
   res.status(500).render('error', { 
     title: 'Error',
-    message: 'Something went wrong!', 
+    message: 'Something went wrong!',
     error: process.env.NODE_ENV === 'development' ? err : {},
     isAuthenticated: res.locals.isAuthenticated || false,
     isAdmin: res.locals.isAdmin || false,
@@ -453,7 +281,6 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     const path = req.path;
     console.log(`404 Not Found: ${req.method} ${path}`);
-    
     // If JSON is requested or it's an API route, return JSON error
     if (path.startsWith('/api') || 
        (req.headers.accept && req.headers.accept.includes('application/json'))) {

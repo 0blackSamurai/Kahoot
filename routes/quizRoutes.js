@@ -7,7 +7,7 @@ const { isAuthenticated, isAdmin } = require('../middleware/authMiddleware');
 router.get('/create', isAuthenticated, quizController.renderCreateQuiz);
 router.post('/create', isAuthenticated, quizController.createQuiz);
 router.get('/all', isAuthenticated, quizController.getAllQuizzes);
-router.get('/admin/all', isAuthenticated, isAdmin, quizController.getAllQuizzesForAdmin); // Admin route to get ALL quizzes
+router.get('/admin/all', isAuthenticated, isAdmin, quizController.getAllQuizzesForAdmin);
 router.get('/export', isAuthenticated, isAdmin, quizController.exportQuizzes);
 router.get('/my-quizzes', isAuthenticated, quizController.getUserQuizzes);
 router.get('/view/:id', isAuthenticated, quizController.viewQuiz);
@@ -20,16 +20,17 @@ router.get('/play/:id', isAuthenticated, quizController.playQuiz);
 router.post('/submit/:id', isAuthenticated, quizController.submitQuizAnswers);
 
 // Game joining routes
-router.get('/join', quizController.joinQuiz);
+router.get('/join', quizController.joinQuiz); // Using the same function for GET and POST
 router.post('/join', quizController.joinQuiz);
 router.post('/join-by-id', quizController.joinQuizById);
+// Fix for the middleware issue - remove the non-existent middleware
 router.get('/lobby/:code', quizController.gameLobby);
 router.get('/public-games', quizController.getPublicGames);
 
 // Add new route for player's game view
 router.get('/play-game/:code', quizController.playGameAsPlayer);
 
-// Delete routes - adding explicit admin permission path
+// Delete routes
 router.delete('/delete/:id', isAuthenticated, quizController.deleteQuiz);
 router.get('/delete/:id', isAuthenticated, quizController.deleteQuiz);
 

@@ -1,0 +1,87 @@
+<%- include('./partials/header.ejs') %>
+
+<!-- <link rel="stylesheet" href="/css/faq.css"> -->
+
+<div class="faq-container">
+    <div class="faq-header">
+        <h1>Frequently Asked Questions</h1>
+        <p>Find answers to the most common questions about our quiz platform.</p>
+    </div>
+    
+    <div class="faq-accordion">
+        <div class="faq-item">
+            <div class="faq-question">
+                <h3>What is Quizzify?</h3>
+                <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="faq-answer">
+                <p>Quizzify is an interactive quiz platform inspired by Kahoot. It allows users to create custom quizzes, join existing games, and compete with friends and colleagues in real-time.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">
+                <h3>Do I need an account to play quizzes?</h3>
+                <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="faq-answer">
+                <p>No, you don't need an account to join and play quizzes. Simply use the "Join Game" button and enter the game PIN provided by the quiz host.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">
+                <h3>How do I create my own quiz?</h3>
+                <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="faq-answer">
+                <p>To create your own quiz, you'll need to register for an account or log in. Once logged in, click on "Create Quiz" in your user menu. You can then add questions, multiple-choice answers, and customize settings like time limits.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">
+                <h3>Is Quizzify free to use?</h3>
+                <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="faq-answer">
+                <p>Yes, Quizzify is completely free to use for basic features. We offer all the essential tools needed to create and host engaging quizzes.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">
+                <h3>How many people can join a quiz?</h3>
+                <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="faq-answer">
+                <p>Our standard quizzes support up to 50 concurrent players. This makes Quizzify perfect for classrooms, team events, or friendly competitions.</p>
+            </div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">
+                <h3>Can I edit my quiz after creating it?</h3>
+                <span class="faq-toggle"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="faq-answer">
+                <p>Yes, you can edit your quizzes at any time through your profile. Changes will be saved automatically and will be available the next time you host the quiz.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const faqItems = document.querySelectorAll('.faq-question');
+        
+        faqItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const parent = item.parentNode;
+                parent.classList.toggle('active');
+            });
+        });
+    });
+</script>
+
+<%- include('./partials/footer.ejs') %>

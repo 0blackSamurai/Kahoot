@@ -500,7 +500,10 @@ exports.hostQuiz = async (req, res) => {
             players: [],
             status: 'waiting', // waiting, playing, finished
             currentQuestion: 0,
-            startTime: Date.now()
+            startTime: Date.now(),
+            lastActivity: Date.now(),  // Add timestamp for activity tracking
+            answers: {},               // Track answers by question
+            questionStartTime: null    // Track when current question started
         };
         
         // Store a reference to the game by hostId as well
@@ -527,9 +530,9 @@ exports.hostQuiz = async (req, res) => {
     }
 };
 
-// Join quiz by game code
+// Join quiz by game code - handles both GET and POST
 exports.joinQuiz = async (req, res) => {
-    // If GET request, just render the join form - fix by checking the request method
+    // If GET request, just render the join form
     if (req.method === 'GET') {
         return res.render('join', {
             title: 'Join Quiz'

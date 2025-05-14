@@ -50,6 +50,16 @@
     </div>
 </div>
 
+<div class="player-status-panel">
+    <h3>Player Status</h3>
+    <div id="playersList"></div>
+    
+    <div class="connection-status">
+        <div id="connectionIndicator" class="connection-indicator connected"></div>
+        <span id="connectionStatus">Connected</span>
+    </div>
+</div>
+
 <div class="game-area" style="display: none;">
     <div class="game-header">
         <h2 id="questionText"></h2>
@@ -729,6 +739,37 @@
             if (isCorrect) {
                 playSound('/sounds/correct-answer.mp3');
             }
+        });
+
+        // Track player connection status
+        socket.on('player-disconnected', (data) => {
+            const playerEl = document.querySelector(`.player-item[data-id="${data.playerId}"]`);
+            if (playerEl) {
+                playerEl.classList.add('disconnected');
+                playerEl.querySelector('.player-status').innerHTML = '<span class="status-offline">Offline</span>';
+            }
+        });
+        
+        // Track player reconnection
+        socket.on('player-reconnected', (data) => {
+            const playerEl = document.querySelector(`.player-item[data-id="${data.playerId}"]`);
+            if (playerEl) {
+                playerEl.classList.remove('disconnected');
+                playerEl.querySelector('.player-status').innerHTML = '<span class="status-online">Online</span>';
+            }
+        });
+        
+        // Handle host's own connection issues
+        socket.on('disconnect', () => {
+            document.getElementById('connectionIndicator').classList.remove('connected');
+            document.getElementById('connectionIndicator').classList.add('disconnected');
+            document.getElementById('connectionStatus').textContent = 'Disconnected - trying to reconnect...';
+        });
+        
+        socket.on('connect', () => {
+            document.getElementById('connectionIndicator').classList.remove('disconnected');
+            document.getElementById('connectionIndicator').classList.add('connected');
+            document.getElementById('connectionStatus').textContent = 'Connected';
         });
         
         function addPlayerToUI(player) {

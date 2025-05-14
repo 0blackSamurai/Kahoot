@@ -17,7 +17,32 @@
     <div class="question-display">
         <div id="questionText" class="question-text"></div>
         
-        <div class="options-grid" id="optionsGrid"></div>
+        <!-- Multiple Choice Options (default) -->
+        <div id="optionsGrid" class="options-grid question-type-container"></div>
+        
+        <!-- Text Answer Question -->
+        <div id="textAnswerContainer" class="text-answer question-type-container" style="display:none">
+            <div class="text-answer-box">
+                <input type="text" id="textAnswerInput" class="text-answer-input" placeholder="Type your answer here...">
+                <button id="submitTextAnswer" class="btn-submit-answer">Submit</button>
+            </div>
+        </div>
+        
+        <!-- Ordering Question -->
+        <div id="orderingContainer" class="ordering-container question-type-container" style="display:none">
+            <div id="orderingItems" class="ordering-items-list"></div>
+            <div class="ordering-controls">
+                <button id="submitOrdering" class="btn-submit-answer">Submit Order</button>
+            </div>
+        </div>
+        
+        <!-- True/False Question -->
+        <div id="trueFalseContainer" class="true-false-container question-type-container" style="display:none">
+            <div class="true-false-options">
+                <button id="trueButton" class="true-button">TRUE</button>
+                <button id="falseButton" class="false-button">FALSE</button>
+            </div>
+        </div>
     </div>
     
     <div class="game-controls">
@@ -398,21 +423,162 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
     
-    /* Responsive Adjustments */
+    /* Text Answer styles */
+    .text-answer {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .text-answer-box {
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .text-answer-input {
+        padding: 15px;
+        font-size: 1.5rem;
+        border: 3px solid var(--kahoot-light-purple);
+        background-color: white;
+        border-radius: 10px;
+        text-align: center;
+        color: #333;
+    }
+    
+    .btn-submit-answer {
+        background-color: var(--kahoot-green);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 15px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-submit-answer:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Ordering styles */
+    .ordering-container {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .ordering-items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .ordering-item {
+        display: flex;
+        align-items: center;
+        background-color: var(--dark-card-bg);
+        padding: 15px;
+        border-radius: 10px;
+        cursor: grab;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+    
+    .ordering-item:hover {
+        background-color: var(--dark-hover);
+    }
+    
+    .ordering-item.dragging {
+        opacity: 0.8;
+        background-color: var(--kahoot-light-purple);
+        transform: scale(1.02);
+    }
+    
+    .ordering-handle {
+        margin-right: 10px;
+        color: var(--kahoot-light-purple);
+    }
+    
+    .ordering-text {
+        flex-grow: 1;
+        font-size: 1.1rem;
+    }
+    
+    .ordering-controls {
+        margin-top: 20px;
+        text-align: center;
+    }
+    
+    /* True/False styles */
+    .true-false-container {
+        width: 100%;
+        margin-top: 20px;
+    }
+    
+    .true-false-options {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+    }
+    
+    .true-button, .false-button {
+        padding: 30px;
+        width: 200px;
+        font-size: 2rem;
+        font-weight: bold;
+        border: none;
+        border-radius: 15px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .true-button {
+        background-color: var(--kahoot-green);
+        color: white;
+    }
+    
+    .false-button {
+        background-color: var(--kahoot-red);
+        color: white;
+    }
+    
+    .true-button:hover, .false-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    .true-button.selected, .false-button.selected {
+        border: 4px solid white;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+    }
+    
+    /* Make sure all question type containers share styling */
+    .question-type-container {
+        flex: 1;
+    }
+
+    /* Responsive styles for new question types */
     @media (max-width: 768px) {
-        .options-grid {
-            grid-template-columns: 1fr;
-            gap: 10px;
+        .true-false-options {
+            flex-direction: column;
+            gap: 15px;
         }
         
-        .question-text {
+        .true-button, .false-button {
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .text-answer-input {
             font-size: 1.2rem;
-            padding: 15px;
-        }
-        
-        .option-button {
-            padding: 15px;
-            font-size: 1rem;
+            padding: 12px;
         }
     }
 </style>
@@ -426,6 +592,15 @@
         // Game elements
         const questionTextEl = document.getElementById('questionText');
         const optionsGridEl = document.getElementById('optionsGrid');
+        const textAnswerContainerEl = document.getElementById('textAnswerContainer');
+        const textAnswerInputEl = document.getElementById('textAnswerInput');
+        const submitTextAnswerBtn = document.getElementById('submitTextAnswer');
+        const orderingContainerEl = document.getElementById('orderingContainer');
+        const orderingItemsEl = document.getElementById('orderingItems');
+        const submitOrderingBtn = document.getElementById('submitOrdering');
+        const trueFalseContainerEl = document.getElementById('trueFalseContainer');
+        const trueButtonEl = document.getElementById('trueButton');
+        const falseButtonEl = document.getElementById('falseButton');
         const currentQuestionEl = document.getElementById('currentQuestion');
         const totalQuestionsEl = document.getElementById('totalQuestions');
         const scoreEl = document.getElementById('score');
@@ -451,6 +626,7 @@
         let answered = false;
         const userAnswers = [];
         const optionSymbols = ['▲', '◆', '●', '■'];
+        let orderingItems = [];
         
         // Start the game
         startGame();
@@ -469,6 +645,11 @@
             answered = false;
             clearInterval(timer);
             
+            // Hide all question type containers
+            document.querySelectorAll('.question-type-container').forEach(container => {
+                container.style.display = 'none';
+            });
+            
             // Hide buttons
             nextBtn.style.display = 'none';
             finishBtn.style.display = 'none';
@@ -480,11 +661,42 @@
             questionTextEl.textContent = question.questionText;
             currentQuestionEl.textContent = index + 1;
             
-            // Generate options
-            optionsGridEl.innerHTML = '';
-            const shuffledOptions = [...question.options];
+            // Determine question type and show appropriate interface
+            const questionType = question.questionType || 'multiple-choice';
             
-            shuffledOptions.forEach((option, optIdx) => {
+            switch(questionType) {
+                case 'multiple-choice':
+                    loadMultipleChoiceQuestion(question);
+                    break;
+                case 'text-answer':
+                    loadTextAnswerQuestion();
+                    break;
+                case 'ordering':
+                    loadOrderingQuestion(question);
+                    break;
+                case 'true-false':
+                    loadTrueFalseQuestion();
+                    break;
+                default:
+                    loadMultipleChoiceQuestion(question);
+            }
+            
+            // Set timer
+            timeLeft = question.timeLimit || 30;
+            timerTextEl.textContent = timeLeft;
+            timerBarEl.style.width = '100%';
+            
+            // Start timer
+            startTimer();
+        }
+        
+        function loadMultipleChoiceQuestion(question) {
+            optionsGridEl.style.display = 'grid';
+            optionsGridEl.innerHTML = '';
+            
+            const options = question.options || [];
+            
+            options.forEach((option, optIdx) => {
                 const optionBtn = document.createElement('button');
                 optionBtn.className = `option-button ${getColorClass(optIdx)}`;
                 optionBtn.dataset.index = optIdx;
@@ -497,14 +709,73 @@
                 optionBtn.addEventListener('click', () => selectOption(optIdx));
                 optionsGridEl.appendChild(optionBtn);
             });
+        }
+        
+        function loadTextAnswerQuestion() {
+            textAnswerContainerEl.style.display = 'flex';
+            textAnswerInputEl.value = '';
+            textAnswerInputEl.focus();
             
-            // Set timer
-            timeLeft = question.timeLimit || 30;
-            timerTextEl.textContent = timeLeft;
-            timerBarEl.style.width = '100%';
+            submitTextAnswerBtn.onclick = () => {
+                submitTextAnswer(textAnswerInputEl.value);
+            };
             
-            // Start timer
-            startTimer();
+            // Allow enter key to submit
+            textAnswerInputEl.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    submitTextAnswer(textAnswerInputEl.value);
+                }
+            };
+        }
+        
+        function loadOrderingQuestion(question) {
+            orderingContainerEl.style.display = 'flex';
+            orderingItemsEl.innerHTML = '';
+            
+            // Get items to order (either from orderItems or create from options)
+            const items = question.orderItems || question.options?.map(opt => opt.text) || [];
+            
+            // Shuffle items for display
+            orderingItems = [...items];
+            shuffle(orderingItems);
+            
+            // Create DOM elements for each item
+            orderingItems.forEach((item, idx) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'ordering-item';
+                itemEl.draggable = true;
+                itemEl.dataset.index = idx;
+                itemEl.innerHTML = `
+                    <div class="ordering-handle"><i class="fas fa-grip-lines"></i></div>
+                    <div class="ordering-text">${item}</div>
+                `;
+                orderingItemsEl.appendChild(itemEl);
+                
+                // Add drag events
+                itemEl.addEventListener('dragstart', handleDragStart);
+                itemEl.addEventListener('dragover', handleDragOver);
+                itemEl.addEventListener('drop', handleDrop);
+                itemEl.addEventListener('dragend', handleDragEnd);
+            });
+            
+            submitOrderingBtn.onclick = submitOrdering;
+        }
+        
+        function loadTrueFalseQuestion() {
+            trueFalseContainerEl.style.display = 'flex';
+            
+            // Reset button states
+            trueButtonEl.classList.remove('selected');
+            falseButtonEl.classList.remove('selected');
+            
+            // Set click handlers
+            trueButtonEl.onclick = () => {
+                selectTrueFalse(true);
+            };
+            
+            falseButtonEl.onclick = () => {
+                selectTrueFalse(false);
+            };
         }
         
         function getColorClass(index) {
@@ -531,6 +802,7 @@
             }, 1000);
         }
         
+        // Multiple choice answer handling
         function selectOption(optionIndex) {
             if (answered) return; // Prevent multiple selections
             answered = true;
@@ -546,7 +818,8 @@
             userAnswers.push({
                 questionIndex: currentQuestionIndex,
                 selectedOption: optionIndex,
-                correct: isCorrect
+                correct: isCorrect,
+                type: 'multiple-choice'
             });
             
             // Update score if correct
@@ -557,39 +830,184 @@
             
             // Show correct/incorrect options
             setTimeout(() => {
-                showAnswers();
+                showMultipleChoiceAnswers();
                 
                 // Show next button
-                if (currentQuestionIndex < questions.length - 1) {
-                    nextBtn.style.display = 'block';
-                } else {
-                    finishBtn.style.display = 'block';
-                }
+                showNextButton();
             }, 500);
         }
         
-        function handleTimeUp() {
+        // Text answer handling
+        function submitTextAnswer(answer) {
+            if (answered) return; // Prevent multiple submissions
             answered = true;
+            clearInterval(timer);
             
-            // Save as wrong answer
+            const question = questions[currentQuestionIndex];
+            let isCorrect = false;
+            
+            if (question.textAnswer) {
+                const userAnswer = answer.trim();
+                const correctAnswer = question.textAnswer.correctAnswer;
+                const caseSensitive = question.textAnswer.caseSensitive || false;
+                const exactMatch = question.textAnswer.exactMatch || false;
+                const alternativeAnswers = question.textAnswer.alternativeAnswers || [];
+                
+                // Check if answer is correct
+                if (caseSensitive) {
+                    if (exactMatch) {
+                        isCorrect = userAnswer === correctAnswer || 
+                                   alternativeAnswers.includes(userAnswer);
+                    } else {
+                        isCorrect = correctAnswer.includes(userAnswer) || 
+                                   alternativeAnswers.some(alt => alt.includes(userAnswer));
+                    }
+                } else {
+                    const lowerUserAnswer = userAnswer.toLowerCase();
+                    const lowerCorrectAnswer = correctAnswer.toLowerCase();
+                    const lowerAlternatives = alternativeAnswers.map(alt => alt.toLowerCase());
+                    
+                    if (exactMatch) {
+                        isCorrect = lowerUserAnswer === lowerCorrectAnswer || 
+                                   lowerAlternatives.includes(lowerUserAnswer);
+                    } else {
+                        isCorrect = lowerCorrectAnswer.includes(lowerUserAnswer) || 
+                                   lowerAlternatives.some(alt => alt.includes(lowerUserAnswer));
+                    }
+                }
+            }
+            
+            // Save user's answer
             userAnswers.push({
                 questionIndex: currentQuestionIndex,
-                selectedOption: -1, // No option selected
-                correct: false
+                textAnswer: answer,
+                correct: isCorrect,
+                type: 'text-answer'
             });
             
-            // Show correct answers
-            showAnswers();
+            // Update score if correct
+            if (isCorrect) {
+                score += calculatePoints(timeLeft);
+                updateScore();
+                textAnswerInputEl.style.borderColor = "var(--kahoot-green)";
+                textAnswerInputEl.style.backgroundColor = "rgba(38, 137, 12, 0.2)";
+            } else {
+                textAnswerInputEl.style.borderColor = "var(--kahoot-red)";
+                textAnswerInputEl.style.backgroundColor = "rgba(226, 27, 60, 0.2)";
+            }
+            
+            textAnswerInputEl.disabled = true;
+            submitTextAnswerBtn.disabled = true;
+            
+            // Show feedback
+            const feedbackEl = document.createElement('div');
+            feedbackEl.className = isCorrect ? 'answer-feedback correct' : 'answer-feedback incorrect';
+            feedbackEl.innerHTML = isCorrect ? 
+                '<i class="fas fa-check-circle"></i> Correct!' : 
+                `<i class="fas fa-times-circle"></i> Incorrect! The answer was: <strong>${question.textAnswer?.correctAnswer || 'N/A'}</strong>`;
+            textAnswerContainerEl.appendChild(feedbackEl);
             
             // Show next button
-            if (currentQuestionIndex < questions.length - 1) {
-                nextBtn.style.display = 'block';
-            } else {
-                finishBtn.style.display = 'block';
-            }
+            showNextButton();
         }
         
-        function showAnswers() {
+        // Ordering answer handling
+        function submitOrdering() {
+            if (answered) return; // Prevent multiple submissions
+            answered = true;
+            clearInterval(timer);
+            
+            const question = questions[currentQuestionIndex];
+            const correctOrder = question.orderItems || question.options?.map(opt => opt.text) || [];
+            const currentOrder = [];
+            
+            // Get current order from DOM
+            const orderingItemsElements = orderingItemsEl.querySelectorAll('.ordering-item');
+            orderingItemsElements.forEach(item => {
+                currentOrder.push(orderingItems[parseInt(item.dataset.index)]);
+            });
+            
+            // Check if order is correct
+            const isCorrect = arraysEqual(currentOrder, correctOrder);
+            
+            // Save user's answer
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                submittedOrder: currentOrder,
+                correct: isCorrect,
+                type: 'ordering'
+            });
+            
+            // Update score if correct
+            if (isCorrect) {
+                score += calculatePoints(timeLeft);
+                updateScore();
+            }
+            
+            // Highlight correct/incorrect
+            orderingItemsElements.forEach((item, idx) => {
+                if (orderingItems[parseInt(item.dataset.index)] === correctOrder[idx]) {
+                    item.style.backgroundColor = "var(--kahoot-green)";
+                } else {
+                    item.style.backgroundColor = "var(--kahoot-red)";
+                    item.style.opacity = "0.7";
+                }
+            });
+            
+            // Disable further interaction
+            submitOrderingBtn.disabled = true;
+            orderingItemsElements.forEach(item => {
+                item.draggable = false;
+            });
+            
+            // Show next button
+            showNextButton();
+        }
+        
+        // True/False answer handling
+        function selectTrueFalse(isTrue) {
+            if (answered) return; // Prevent multiple selections
+            answered = true;
+            clearInterval(timer);
+            
+            // Update UI
+            trueButtonEl.classList.toggle('selected', isTrue);
+            falseButtonEl.classList.toggle('selected', !isTrue);
+            
+            const question = questions[currentQuestionIndex];
+            const isCorrect = question.isTrueCorrect === isTrue;
+            
+            // Save user's answer
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                selectedAnswer: isTrue ? 'true' : 'false',
+                correct: isCorrect,
+                type: 'true-false'
+            });
+            
+            // Update score if correct
+            if (isCorrect) {
+                score += calculatePoints(timeLeft);
+                updateScore();
+            }
+            
+            // Show feedback
+            setTimeout(() => {
+                if (question.isTrueCorrect) {
+                    trueButtonEl.style.borderColor = "white";
+                    trueButtonEl.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.5)";
+                } else {
+                    falseButtonEl.style.borderColor = "white";
+                    falseButtonEl.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.5)";
+                }
+                
+                // Show next button
+                showNextButton();
+            }, 500);
+        }
+        
+        // Show the correct/incorrect answers for multiple choice
+        function showMultipleChoiceAnswers() {
             const question = questions[currentQuestionIndex];
             const options = optionsGridEl.children;
             
@@ -599,6 +1017,75 @@
                 } else if (options[i].classList.contains('selected')) {
                     options[i].classList.add('incorrect');
                 }
+            }
+        }
+        
+        function handleTimeUp() {
+            answered = true;
+            
+            // Get the current question type
+            const question = questions[currentQuestionIndex];
+            const questionType = question.questionType || 'multiple-choice';
+            
+            // Save as wrong answer based on question type
+            let answerData = {
+                questionIndex: currentQuestionIndex,
+                correct: false,
+                type: questionType
+            };
+            
+            switch(questionType) {
+                case 'multiple-choice':
+                    answerData.selectedOption = -1; // No option selected
+                    showMultipleChoiceAnswers();
+                    break;
+                case 'text-answer':
+                    answerData.textAnswer = '';
+                    textAnswerInputEl.disabled = true;
+                    submitTextAnswerBtn.disabled = true;
+                    // Show correct answer
+                    const feedbackEl = document.createElement('div');
+                    feedbackEl.className = 'answer-feedback timeout';
+                    feedbackEl.innerHTML = `<i class="fas fa-clock"></i> Time's up! The answer was: <strong>${question.textAnswer?.correctAnswer || 'N/A'}</strong>`;
+                    textAnswerContainerEl.appendChild(feedbackEl);
+                    break;
+                case 'ordering':
+                    answerData.submittedOrder = [];
+                    submitOrderingBtn.disabled = true;
+                    // Highlight correct order
+                    const correctOrder = question.orderItems || [];
+                    const orderingItemsElements = orderingItemsEl.querySelectorAll('.ordering-item');
+                    orderingItemsElements.forEach((item, idx) => {
+                        item.style.backgroundColor = "var(--kahoot-red)";
+                        item.style.opacity = "0.7";
+                        item.draggable = false;
+                    });
+                    break;
+                case 'true-false':
+                    answerData.selectedAnswer = null;
+                    // Highlight correct answer
+                    if (question.isTrueCorrect) {
+                        trueButtonEl.style.borderColor = "white";
+                        trueButtonEl.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.5)";
+                    } else {
+                        falseButtonEl.style.borderColor = "white";
+                        falseButtonEl.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.5)";
+                    }
+                    break;
+            }
+            
+            userAnswers.push(answerData);
+            
+            // Show next button
+            showNextButton();
+        }
+        
+        function showNextButton() {
+            // Show next button or finish button based on question index
+            if (currentQuestionIndex < questions.length - 1) {
+                nextBtn.style.display = 'block';
+            } else {
+                finishBtn.style.display = 'block';
             }
         }
         
@@ -625,6 +1112,61 @@
             
             // Show modal
             resultsModal.style.display = 'flex';
+        }
+        
+        // Utility functions for ordering questions
+        function handleDragStart(e) {
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', this.dataset.index);
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            return false;
+        }
+        
+        function handleDrop(e) {
+            e.stopPropagation();
+            
+            const draggedItemIndex = e.dataTransfer.getData('text/plain');
+            const draggedItem = document.querySelector(`.ordering-item[data-index="${draggedItemIndex}"]`);
+            const dropTarget = this;
+            
+            if (draggedItem !== dropTarget) {
+                // Get positions in the container
+                const allItems = Array.from(orderingItemsEl.querySelectorAll('.ordering-item'));
+                const draggedPosition = allItems.indexOf(draggedItem);
+                const dropPosition = allItems.indexOf(dropTarget);
+                
+                // Reorder elements
+                if (draggedPosition < dropPosition) {
+                    orderingItemsEl.insertBefore(draggedItem, dropTarget.nextSibling);
+                } else {
+                    orderingItemsEl.insertBefore(draggedItem, dropTarget);
+                }
+            }
+            
+            return false;
+        }
+        
+        function handleDragEnd() {
+            document.querySelectorAll('.ordering-item').forEach(item => {
+                item.classList.remove('dragging');
+            });
+        }
+        
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            return a.every((val, idx) => val === b[idx]);
         }
         
         // Event Listeners
