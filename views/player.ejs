@@ -27,7 +27,8 @@
     <div class="question-area" id="questionArea" style="display:none;">
         <div id="questionText" class="question-text">Loading question...</div>
         
-        <div class="options-grid">
+        <!-- Multiple choice question type -->
+        <div id="multipleChoiceArea" class="options-grid question-type-container">
             <button class="option-button red" id="option0" data-index="0">
                 <div class="option-symbol">▲</div>
                 <div class="option-text">Option 1</div>
@@ -44,6 +45,22 @@
                 <div class="option-symbol">■</div>
                 <div class="option-text">Option 4</div>
             </button>
+        </div>
+        
+        <!-- Text answer question type -->
+        <div id="textAnswerArea" class="text-answer-area question-type-container" style="display:none">
+            <div class="text-input-container">
+                <input type="text" id="textAnswerInput" class="text-answer-input" placeholder="Skriv inn svaret her...">
+                <button id="submitTextAnswer" class="btn-submit">Send svar</button>
+            </div>
+        </div>
+
+        <!-- True/False question type -->
+        <div id="trueFalseArea" class="true-false-area question-type-container" style="display:none">
+            <div class="true-false-options">
+                <button class="true-button" id="trueButton">SANT</button>
+                <button class="false-button" id="falseButton">USANT</button>
+            </div>
         </div>
     </div>
     
@@ -81,7 +98,6 @@
         height: 100vh;
         overflow: hidden;
     }
-    
     .player-container {
         max-width: 900px;
         margin: 0 auto;
@@ -90,7 +106,6 @@
         display: flex;
         flex-direction: column;
     }
-    
     .player-header {
         background-color: rgba(45, 45, 45, 0.85);
         border-radius: 12px;
@@ -98,14 +113,12 @@
         margin-bottom: 20px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
-    
     .player-header h1 {
         font-size: 1.8rem;
         margin: 0 0 10px 0;
         color: white;
         text-align: center;
     }
-    
     .game-info {
         display: flex;
         justify-content: space-between;
@@ -113,7 +126,6 @@
         font-size: 1.1rem;
         color: #ddd;
     }
-    
     .waiting-message {
         text-align: center;
         color: var(--kahoot-light-purple);
@@ -121,7 +133,6 @@
         margin-top: 10px;
         animation: pulse 1.5s infinite;
     }
-    
     .timer-container {
         width: 100%;
         height: 12px;
@@ -130,7 +141,6 @@
         margin-top: 10px;
         position: relative;
     }
-    
     .timer-bar {
         height: 100%;
         width: 100%;
@@ -138,7 +148,6 @@
         border-radius: 6px;
         transition: width 1s linear;
     }
-    
     .timer-text {
         position: absolute;
         right: 10px;
@@ -146,7 +155,6 @@
         color: #fff;
         font-weight: bold;
     }
-    
     .waiting-area {
         flex: 1;
         display: flex;
@@ -154,7 +162,6 @@
         justify-content: center;
         align-items: center;
     }
-    
     .spinner {
         width: 50px;
         height: 50px;
@@ -164,17 +171,14 @@
         animation: spin 1s infinite linear;
         margin-bottom: 20px;
     }
-    
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
-    
     .question-area {
         flex: 1;
         display: flex;
         flex-direction: column;
     }
-    
     .question-text {
         background-color: var(--dark-card-bg);
         padding: 20px;
@@ -185,14 +189,12 @@
         text-align: center;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     }
-    
     .options-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
         gap: 15px;
         flex: 1;
     }
-    
     .option-button {
         border: none;
         border-radius: 12px;
@@ -209,21 +211,17 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         min-height: 100px;
     }
-    
     .option-button:hover {
         transform: translateY(-5px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
     }
-    
     .option-button:active {
         transform: translateY(0);
     }
-    
     .option-button.red { background-color: var(--kahoot-red); }
     .option-button.blue { background-color: var(--kahoot-blue); }
     .option-button.yellow { background-color: var(--kahoot-yellow); }
     .option-button.green { background-color: var(--kahoot-green); }
-    
     .option-symbol {
         font-size: 24px;
         margin-right: 15px;
@@ -236,24 +234,20 @@
         border-radius: 5px;
         color: #333;
     }
-    
     .option-button .option-text {
         flex: 1;
         text-align: left;
     }
-    
     .option-button.selected {
         border: 4px solid white;
         box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
         transform: scale(0.98);
     }
-    
     .option-button.disabled {
         opacity: 0.7;
         cursor: not-allowed;
         transform: none;
     }
-    
     .answer-status {
         position: absolute;
         top: 0;
@@ -267,34 +261,28 @@
         background-color: rgba(30, 30, 30, 0.95);
         z-index: 100;
     }
-    
     .answer-icon {
         font-size: 72px;
         margin-bottom: 20px;
         animation: bounceIn 0.5s;
     }
-    
     .answer-icon .fa-check { color: var(--kahoot-green); }
     .answer-icon .fa-times { color: var(--kahoot-red); }
-    
     .answer-message {
         font-size: 2rem;
         font-weight: bold;
         color: white;
         margin-bottom: 10px;
     }
-    
     .answer-points {
         font-size: 1.5rem;
         color: var(--kahoot-light-purple);
         margin-bottom: 30px;
     }
-    
     .waiting-next {
         color: var(--dark-text-secondary);
         animation: pulse 1.5s infinite;
     }
-    
     .results-area {
         flex: 1;
         display: flex;
@@ -303,35 +291,29 @@
         justify-content: center;
         text-align: center;
     }
-    
     .results-area h2 {
         color: white;
         font-size: 2.5rem;
         margin-bottom: 30px;
     }
-    
     .final-rank {
         margin-bottom: 30px;
     }
-    
     .rank-title {
         color: var(--dark-text-secondary);
         font-size: 1.2rem;
         margin-bottom: 5px;
     }
-    
     .rank-display {
         font-size: 3.5rem;
         font-weight: bold;
         color: var(--kahoot-light-purple);
         margin-bottom: 10px;
     }
-    
     .final-score {
         font-size: 1.5rem;
         color: white;
     }
-    
     .top-players {
         background-color: var(--dark-card-bg);
         border-radius: 10px;
@@ -340,45 +322,37 @@
         max-width: 400px;
         margin-bottom: 30px;
     }
-    
     .player-row {
         display: flex;
         justify-content: space-between;
         padding: 10px 15px;
         border-bottom: 1px solid var(--dark-border);
     }
-    
     .player-row:last-child {
         border-bottom: none;
     }
-    
     .player-row.highlight {
         background-color: rgba(142, 82, 245, 0.2);
         border-radius: 5px;
     }
-    
     .player-rank {
         width: 30px;
         font-weight: bold;
         color: var(--kahoot-light-purple);
     }
-    
     .player-name {
         flex: 1;
         text-align: left;
         margin: 0 10px;
         color: white;
     }
-    
     .player-score {
         color: var(--dark-text-secondary);
     }
-    
     .result-actions {
         display: flex;
         gap: 15px;
     }
-    
     .btn-join-new, .btn-back-home {
         background-color: var(--kahoot-green);
         color: white;
@@ -390,58 +364,48 @@
         text-decoration: none;
         transition: all 0.2s;
     }
-    
     .btn-back-home {
         background-color: var(--dark-input-bg);
     }
-    
     .btn-join-new:hover, .btn-back-home:hover {
         transform: translateY(-3px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-    
     @keyframes pulse {
         0% { opacity: 0.7; }
         50% { opacity: 1; }
         100% { opacity: 0.7; }
     }
-    
     @keyframes bounceIn {
         0% { transform: scale(0); }
         50% { transform: scale(1.2); }
         100% { transform: scale(1); }
     }
-    
     /* Responsive adjustments for mobile */
     @media (max-width: 768px) {
         .options-grid {
             grid-template-columns: 1fr;
             gap: 10px;
         }
-        
         .option-button {
             padding: 15px;
             font-size: 1rem;
             min-height: 70px;
         }
-        
         .question-text {
             font-size: 1.2rem;
             padding: 15px;
         }
     }
-    
     /* Add score update animation */
     @keyframes scoreUpdate {
         0% { transform: scale(1); }
         50% { transform: scale(1.5); color: var(--kahoot-green); }
         100% { transform: scale(1); }
     }
-    
     .score-update {
         animation: scoreUpdate 0.8s ease-in-out;
     }
-    
     /* Add host disconnect message style */
     .host-disconnect-message {
         position: fixed;
@@ -459,14 +423,82 @@
         gap: 10px;
         animation: slideDown 0.3s;
     }
-    
     .host-disconnect-message i {
         color: var(--kahoot-yellow);
     }
-    
     @keyframes slideDown {
         from { transform: translate(-50%, -50px); opacity: 0; }
         to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    /* Improved text answer styles */
+    .text-answer-area {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        width: 100%;
+        padding: 20px 0;
+        background-color: transparent;
+    }
+    .text-input-container {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .text-answer-input {
+        width: 100%;
+        padding: 20px;
+        font-size: 1.8rem;
+        border: 3px solid var(--kahoot-light-purple);
+        border-radius: 12px;
+        color: #333;
+        background-color: white;
+        text-align: center;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        -webkit-appearance: none; /* Fix for iOS */
+    }
+    .text-answer-input:focus {
+        outline: none;
+        border-color: var(--kahoot-purple);
+        box-shadow: 0 0 0 4px rgba(142, 82, 245, 0.3);
+    }
+    .btn-submit {
+        width: 100%;
+        padding: 18px;
+        font-size: 1.4rem;
+        background-color: var(--kahoot-green);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.2s ease;
+    }
+    .btn-submit:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        background-color: #26A65B;
+    }
+    .btn-submit:active {
+        transform: translateY(1px);
+    }
+    .btn-submit.disabled {
+        background-color: #888;
+        transform: none;
+        cursor: not-allowed;
+    }
+    /* Animation to indicate wrong/missing input */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    .shake {
+        animation: shake 0.5s;
     }
 </style>
 
@@ -514,6 +546,15 @@
             document.getElementById('option2'),
             document.getElementById('option3')
         ];
+
+        // Additional UI Elements for different question types
+        const multipleChoiceArea = document.getElementById('multipleChoiceArea');
+        const textAnswerArea = document.getElementById('textAnswerArea');
+        const textAnswerInput = document.getElementById('textAnswerInput');
+        const submitTextAnswer = document.getElementById('submitTextAnswer');
+        const trueFalseArea = document.getElementById('trueFalseArea');
+        const trueButton = document.getElementById('trueButton');
+        const falseButton = document.getElementById('falseButton');
         
         // Game state
         let currentQuestionIndex = 0;
@@ -653,12 +694,27 @@
             questionInfo.style.display = 'block';
             timerContainer.style.display = 'block';
             
-            // Reset option buttons
+            // Hide all question type areas first
+            multipleChoiceArea.style.display = 'none';
+            textAnswerArea.style.display = 'none';
+            trueFalseArea.style.display = 'none';
+            
+            // Reset multiple choice buttons
             optionButtons.forEach(button => {
                 button.classList.remove('selected', 'disabled');
                 button.disabled = false;
-                button.style.display = 'flex'; // Make all visible initially
             });
+            
+            // Reset text answer
+            textAnswerInput.value = '';
+            textAnswerInput.disabled = false;
+            submitTextAnswer.disabled = false;
+            
+            // Reset true/false buttons
+            trueButton.classList.remove('selected', 'disabled');
+            falseButton.classList.remove('selected', 'disabled');
+            trueButton.disabled = false;
+            falseButton.disabled = false;
         }
         
         // Function to load question data
@@ -668,15 +724,75 @@
             currentQuestion.textContent = currentQuestionIndex + 1;
             totalQuestions.textContent = totalQuestionsCount;
             
-            // Set options text
-            for (let i = 0; i < data.options.length && i < optionButtons.length; i++) {
-                optionButtons[i].querySelector('.option-text').textContent = data.options[i].text;
-                optionButtons[i].style.display = 'flex';
-            }
+            // Determine question type and show appropriate interface
+            const questionType = data.questionType || 'multiple-choice';
             
-            // Hide unused options
-            for (let i = data.options.length; i < optionButtons.length; i++) {
-                optionButtons[i].style.display = 'none';
+            // Reset UI for all question types first
+            multipleChoiceArea.style.display = 'none';
+            textAnswerArea.style.display = 'none';
+            trueFalseArea.style.display = 'none';
+            
+            debugLog('Question type detected: ' + questionType);
+            
+            switch (questionType) {
+                case 'text-answer':
+                    debugLog('Showing text answer area');
+                    
+                    // Show text answer interface
+                    textAnswerArea.style.display = 'block';
+                    
+                    // Set custom placeholder if provided
+                    if (data.textAnswer && data.textAnswer.placeholder) {
+                        textAnswerInput.placeholder = data.textAnswer.placeholder;
+                    } else {
+                        textAnswerInput.placeholder = "Skriv inn svaret her...";
+                    }
+                    
+                    // Reset the input field
+                    textAnswerInput.value = '';
+                    textAnswerInput.disabled = false;
+                    submitTextAnswer.disabled = false;
+                    submitTextAnswer.classList.remove('disabled');
+                    textAnswerInput.style.borderColor = "var(--kahoot-light-purple)";
+                    textAnswerInput.style.backgroundColor = "white";
+                    
+                    // Focus on the input field
+                    setTimeout(() => {
+                        textAnswerInput.focus();
+                        debugLog('Input field focused');
+                    }, 300);
+                    break;
+                    
+                case 'true-false':
+                    debugLog('Showing true/false area');
+                    trueFalseArea.style.display = 'block';
+                    
+                    // Reset true/false buttons
+                    trueButton.classList.remove('selected');
+                    falseButton.classList.remove('selected');
+                    trueButton.disabled = false;
+                    falseButton.disabled = false;
+                    break;
+                    
+                case 'multiple-choice':
+                default:
+                    debugLog('Showing multiple choice area');
+                    // Show multiple choice interface and set options
+                    multipleChoiceArea.style.display = 'grid';
+                    
+                    // Set options text
+                    for (let i = 0; i < data.options.length && i < optionButtons.length; i++) {
+                        optionButtons[i].querySelector('.option-text').textContent = data.options[i].text;
+                        optionButtons[i].style.display = 'flex';
+                        optionButtons[i].classList.remove('selected', 'disabled');
+                        optionButtons[i].disabled = false;
+                    }
+                    
+                    // Hide unused options
+                    for (let i = data.options.length; i < optionButtons.length; i++) {
+                        optionButtons[i].style.display = 'none';
+                    }
+                    break;
             }
             
             // Start timer
@@ -745,12 +861,121 @@
             showAnswerFeedback(null, null, 'Answer received!');
         }
         
-        // Function to disable all options
-        function disableOptions() {
-            optionButtons.forEach(button => {
-                button.classList.add('disabled');
-                button.disabled = true;
+        // Improved text answer submission handler
+        function submitTextAnswerHandler() {
+            if (answered) return;
+            
+            debugLog('Submit text answer clicked');
+            
+            // Get the answer text and trim whitespace
+            const answer = textAnswerInput.value.trim();
+            
+            // Don't submit if answer is empty
+            if (answer === '') {
+                textAnswerInput.classList.add('shake');
+                setTimeout(() => textAnswerInput.classList.remove('shake'), 500);
+                return;
+            }
+            
+            // Mark as answered to prevent multiple submissions
+            answered = true;
+            clearInterval(timer);
+            
+            // Disable input and button
+            textAnswerInput.disabled = true;
+            submitTextAnswer.disabled = true;
+            submitTextAnswer.classList.add('disabled');
+            
+            // Visual feedback for the input
+            textAnswerInput.style.borderColor = "var(--kahoot-green)";
+            textAnswerInput.style.backgroundColor = "rgba(38, 166, 91, 0.05)";
+            
+            debugLog('Sending text answer: ' + answer);
+            
+            // Send answer to server
+            socket.emit('submit-answer', {
+                gameCode,
+                questionIndex: currentQuestionIndex,
+                textAnswer: answer,
+                playerId: playerId || socket.id,
+                timeLeft: timeLeft
             });
+            
+            // Show temporary answer received message
+            showAnswerFeedback(null, null, 'Svar sendt!');
+        }
+        
+        // Add better event handling for text answers
+        submitTextAnswer.addEventListener('click', submitTextAnswerHandler);
+        
+        textAnswerInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitTextAnswerHandler();
+            }
+        });
+        
+        trueButton.addEventListener('click', function() {
+            submitTrueFalseAnswer(true);
+        });
+        
+        falseButton.addEventListener('click', function() {
+            submitTrueFalseAnswer(false);
+        });
+        
+        function submitTrueFalseAnswer(answer) {
+            if (answered) return;
+            answered = true;
+            clearInterval(timer);
+            
+            // Update UI
+            if (answer) {
+                trueButton.classList.add('selected');
+            } else {
+                falseButton.classList.add('selected');
+            }
+            
+            // Disable buttons
+            trueButton.disabled = true;
+            falseButton.disabled = true;
+            
+            // Send answer to server
+            socket.emit('submit-answer', {
+                gameCode,
+                questionIndex: currentQuestionIndex,
+                answer: answer,
+                playerId: playerId || socket.id,
+                timeLeft: timeLeft
+            });
+            
+            // Show temporary answer received message
+            showAnswerFeedback(null, null, 'Answer received!');
+        }
+        
+        // Update the function to disable options based on question type
+        function disableOptions() {
+            // Get current question type from data
+            const questionType = questionData ? (questionData.questionType || 'multiple-choice') : 'multiple-choice';
+            
+            switch (questionType) {
+                case 'text-answer':
+                    textAnswerInput.disabled = true;
+                    submitTextAnswer.disabled = true;
+                    break;
+                    
+                case 'true-false':
+                    trueButton.disabled = true;
+                    falseButton.disabled = true;
+                    break;
+                    
+                case 'multiple-choice':
+                default:
+                    optionButtons.forEach(button => {
+                        button.classList.add('disabled');
+                        button.disabled = true;
+                    });
+                    break;
+            }
         }
         
         // Function to show answer feedback

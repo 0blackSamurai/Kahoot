@@ -113,18 +113,38 @@ exports.createQuiz = async (req, res) => {
             });
         }
         
-        // Process questions to include points
-        const processedQuestions = parsedQuestions.map(q => ({
-            questionText: q.questionText,
-            options: q.options,
-            timeLimit: q.timeLimit || 30,
-            points: q.points || 'standard',
-            media: {
-                type: 'none',
-                url: '',
-                alt: ''
+        // Process questions to include all question types
+        const processedQuestions = parsedQuestions.map(q => {
+            const questionData = {
+                questionText: q.questionText,
+                questionType: q.questionType || 'multiple-choice',
+                timeLimit: q.timeLimit || 30,
+                points: q.points || 'standard',
+                media: q.media || {
+                    type: 'none',
+                    url: '',
+                    alt: ''
+                }
+            };
+            
+            // Add type-specific data
+            if (q.questionType === 'multiple-choice' || !q.questionType) {
+                questionData.options = q.options;
+            } else if (q.questionType === 'text-answer') {
+                questionData.textAnswer = {
+                    correctAnswer: q.textAnswer.correctAnswer,
+                    caseSensitive: q.textAnswer.caseSensitive || false,
+                    exactMatch: q.textAnswer.exactMatch || false,
+                    alternativeAnswers: q.textAnswer.alternativeAnswers || []
+                };
+            } else if (q.questionType === 'true-false') {
+                questionData.isTrueCorrect = q.isTrueCorrect;
+            } else if (q.questionType === 'ordering') {
+                questionData.orderItems = q.orderItems;
             }
-        }));
+            
+            return questionData;
+        });
         
         // Create new quiz with explicit userId to avoid any confusion
         const newQuiz = new Quiz({
@@ -138,7 +158,9 @@ exports.createQuiz = async (req, res) => {
         
         console.log('Saving quiz with creator ID:', req.user.userId);
         await newQuiz.save();
-        res.redirect('/quiz/my-quizzes');
+        
+        // Change redirect to profile instead of my-quizzes
+        res.redirect('/profile');
     } catch (error) {
         console.error('Error creating quiz:', error);
         res.status(500).render('error', {
@@ -274,14 +296,38 @@ exports.updateQuiz = async (req, res) => {
             return res.status(400).json({ message: 'Invalid question data format' });
         }
         
-        // Process questions to include points
-        const processedQuestions = parsedQuestions.map(q => ({
-            questionText: q.questionText,
-            options: q.options,
-            timeLimit: q.timeLimit || 30,
-            points: q.points || 'standard',
-            media: q.media || { type: 'none', url: '', alt: '' }
-        }));
+        // Process questions to include all question types
+        const processedQuestions = parsedQuestions.map(q => {
+            const questionData = {
+                questionText: q.questionText,
+                questionType: q.questionType || 'multiple-choice',
+                timeLimit: q.timeLimit || 30,
+                points: q.points || 'standard',
+                media: q.media || {
+                    type: 'none',
+                    url: '',
+                    alt: ''
+                }
+            };
+            
+            // Add type-specific data
+            if (q.questionType === 'multiple-choice' || !q.questionType) {
+                questionData.options = q.options;
+            } else if (q.questionType === 'text-answer') {
+                questionData.textAnswer = {
+                    correctAnswer: q.textAnswer.correctAnswer,
+                    caseSensitive: q.textAnswer.caseSensitive || false,
+                    exactMatch: q.textAnswer.exactMatch || false,
+                    alternativeAnswers: q.textAnswer.alternativeAnswers || []
+                };
+            } else if (q.questionType === 'true-false') {
+                questionData.isTrueCorrect = q.isTrueCorrect;
+            } else if (q.questionType === 'ordering') {
+                questionData.orderItems = q.orderItems;
+            }
+            
+            return questionData;
+        });
         
         // Update quiz
         quiz.title = title;
@@ -321,21 +367,42 @@ exports.playQuiz = async (req, res) => {
             });
         }
         
-        // Hide correct answers when sending to client
+        // Include necessary fields for different question types
         const playableQuiz = {
             _id: quiz._id,
             title: quiz.title,
             description: quiz.description,
-            questions: quiz.questions.map(q => ({
-                _id: q._id,
-                questionText: q.questionText,
-                timeLimit: q.timeLimit,
-                options: q.options.map(opt => ({
-                    _id: opt._id,
-                    text: opt.text
-                    // Exclude isCorrect field
-                }))
-            }))
+            questions: quiz.questions.map(q => {
+                // Create base question data
+                const question = {
+                    _id: q._id,
+                    questionText: q.questionText,
+                    questionType: q.questionType || 'multiple-choice',
+                    timeLimit: q.timeLimit
+                };
+                
+                // Add data specific to question type
+                if (q.questionType === 'multiple-choice' || !q.questionType) {
+                    question.options = q.options.map(opt => ({
+                        _id: opt._id,
+                        text: opt.text
+                        // Exclude isCorrect field
+                    }));
+                } else if (q.questionType === 'true-false') {
+                    // For true/false, just need the type
+                } else if (q.questionType === 'text-answer') {
+                    // Keep minimal information needed for display
+                    question.textAnswer = {
+                        // Just preserve structure but not the correct answer
+                        answerPlaceholder: "Type your answer here..."
+                    };
+                } else if (q.questionType === 'ordering') {
+                    // For ordering, send the items but shuffle on client
+                    question.orderItems = q.orderItems;
+                }
+                
+                return question;
+            })
         };
         
         // Using the play view directly

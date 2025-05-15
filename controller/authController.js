@@ -185,21 +185,29 @@ exports.renderDashboardPage = async (req, res) => {
 
 exports.renderProfilePage = async (req, res) => {
     try {
-        // Check if user is authenticated
-        if (!req.user || !req.user.userId) {
-            return res.redirect('/login');
+        // Find user profile info
+        const user = await User.findById(req.user.userId).select('-passord');
+        
+        if (!user) {
+            return res.status(404).render('error', {
+                title: 'User Not Found',
+                message: 'User profile could not be found',
+                error: { status: 404 }
+            });
         }
         
-        // Fetch user's quizzes
-        const quizzes = await Quiz.find({ createdBy: req.user.userId })
-            .sort({ updatedAt: -1 });
+        // Get user's quizzes for profile page
+        const userQuizzes = await Quiz.find({ createdBy: req.user.userId })
+            .sort({ updatedAt: -1 })
+            .limit(5); // Just get the most recent ones for the profile page
         
-        res.render('profile', { 
+        res.render('profile', {
             title: 'Your Profile',
-            quizzes: quizzes
+            user,
+            userQuizzes
         });
     } catch (error) {
-        console.error('Error loading profile page:', error);
+        console.error('Error rendering profile page:', error);
         res.status(500).render('error', {
             title: 'Error',
             message: 'Failed to load profile page',

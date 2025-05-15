@@ -65,6 +65,7 @@
         <h2 id="questionText"></h2>
         <div class="game-info">
             <span class="question-counter">Question <span id="currentQuestion">1</span>/<span id="totalQuestions"><%= quiz.questions.length %></span></span>
+            <span class="question-type" id="questionTypeDisplay"></span>
         </div>
         <div class="timer-container">
             <div class="timer-bar" id="timerBar"></div>
@@ -77,25 +78,52 @@
             <div class="answer-bar" id="answerBar0">
                 <div class="answer-count" id="answerCount0">0</div>
             </div>
-            <div class="answer-label">Option A</div>
+            <div class="answer-label" id="answerLabel0">Option A</div>
         </div>
         <div class="answer-option" data-option="1">
             <div class="answer-bar" id="answerBar1">
                 <div class="answer-count" id="answerCount1">0</div>
             </div>
-            <div class="answer-label">Option B</div>
+            <div class="answer-label" id="answerLabel1">Option B</div>
         </div>
         <div class="answer-option" data-option="2">
             <div class="answer-bar" id="answerBar2">
                 <div class="answer-count" id="answerCount2">0</div>
             </div>
-            <div class="answer-label">Option C</div>
+            <div class="answer-label" id="answerLabel2">Option C</div>
         </div>
         <div class="answer-option" data-option="3">
             <div class="answer-bar" id="answerBar3">
                 <div class="answer-count" id="answerCount3">0</div>
             </div>
-            <div class="answer-label">Option D</div>
+            <div class="answer-label" id="answerLabel3">Option D</div>
+        </div>
+    </div>
+    
+    <div id="textAnswerDisplay" class="text-answer-display" style="display: none;">
+        <h3>Text Answers <span class="text-answer-count">(<span id="textAnswerCount">0</span> answers)</span></h3>
+        <div id="textAnswersList" class="text-answers-list">
+            <div class="text-answer-placeholder">Waiting for answers...</div>
+        </div>
+        <div class="text-answer-stats">
+            <div class="answer-count-total">Answers received: <span id="textAnswerCount2">0</span>/<span id="textAnswerTotal">?</span></div>
+        </div>
+    </div>
+    
+    <div id="trueFalseDisplay" class="true-false-display" style="display: none;">
+        <div class="true-false-options">
+            <div class="true-option">
+                <div class="answer-bar" id="trueAnswerBar">
+                    <div class="answer-count" id="trueAnswerCount">0</div>
+                </div>
+                <div class="answer-label">TRUE</div>
+            </div>
+            <div class="false-option">
+                <div class="answer-bar" id="falseAnswerBar">
+                    <div class="answer-count" id="falseAnswerCount">0</div>
+                </div>
+                <div class="answer-label">FALSE</div>
+            </div>
         </div>
     </div>
     
@@ -382,6 +410,15 @@
         color: var(--dark-text-secondary);
     }
     
+    .question-type {
+        background-color: var(--kahoot-light-purple);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
     .timer-container {
         width: 100%;
         height: 10px;
@@ -449,6 +486,165 @@
     .answer-label {
         color: var(--dark-text-secondary);
         font-size: 0.9rem;
+    }
+    
+    .text-answer-display {
+        background-color: var(--dark-card-bg);
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .text-answer-display h3 {
+        margin-top: 0;
+        color: white;
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .text-answer-count {
+        font-size: 1rem;
+        color: var(--dark-text-secondary);
+        font-weight: normal;
+    }
+    
+    .text-answers-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+        padding: 5px;
+    }
+    
+    .text-answer-item {
+        background-color: var(--dark-secondary-bg);
+        padding: 12px 18px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        animation: fadeIn 0.3s;
+        border-left: 4px solid var(--kahoot-light-purple);
+        width: calc(50% - 6px);
+        box-sizing: border-box;
+        margin-bottom: 8px;
+    }
+    
+    .text-answer-item.correct-answer {
+        border-left-color: var(--kahoot-green);
+        background-color: rgba(38, 137, 12, 0.1);
+    }
+    
+    .text-answer-item.incorrect-answer {
+        border-left-color: var(--kahoot-red);
+        background-color: rgba(226, 27, 60, 0.1);
+    }
+    
+    .text-answer-status {
+        margin-left: 10px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .correct-answer .text-answer-status {
+        color: var(--kahoot-green);
+    }
+    
+    .incorrect-answer .text-answer-status {
+        color: var(--kahoot-red);
+    }
+    
+    .text-answer-content {
+        color: var(--dark-text);
+        margin-right: 15px;
+        font-size: 1.1rem;
+        flex: 1;
+        word-break: break-word;
+    }
+    
+    .text-answer-user {
+        color: var(--dark-text-secondary);
+        font-size: 0.85rem;
+        padding: 4px 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+    
+    .text-answer-correct {
+        background-color: rgba(38, 166, 91, 0.2);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border-left: 4px solid var(--kahoot-green);
+        display: flex;
+        align-items: center;
+    }
+    
+    .text-answer-correct h4 {
+        margin: 0 15px 0 0;
+        color: var(--kahoot-green);
+    }
+    
+    .text-answer-correct div {
+        color: white;
+        font-size: 1.2rem;
+    }
+    
+    .text-answer-placeholder {
+        color: var(--dark-text-secondary);
+        text-align: center;
+        width: 100%;
+        padding: 30px;
+        font-size: 1.1rem;
+    }
+    
+    .text-answer-stats {
+        margin-top: 20px;
+        color: var(--dark-text-secondary);
+        font-size: 0.95rem;
+        text-align: right;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 15px;
+    }
+    
+    .true-false-display {
+        background-color: var(--dark-card-bg);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .true-false-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+    
+    .true-option .answer-bar {
+        background-color: #444;
+    }
+    
+    .true-option .answer-bar::before {
+        background-color: var(--kahoot-green);
+    }
+    
+    .false-option .answer-bar {
+        background-color: #444;
+    }
+    
+    .false-option .answer-bar::before {
+        background-color: var(--kahoot-red);
     }
     
     .game-controls {
@@ -680,6 +876,17 @@
         const timerText = document.getElementById('timerText');
         const nextQuestionBtn = document.getElementById('nextQuestionBtn');
         const showResultsBtn = document.getElementById('showResultsBtn');
+        const textAnswerDisplay = document.getElementById('textAnswerDisplay');
+        const textAnswersList = document.getElementById('textAnswersList');
+        const textAnswerCount = document.getElementById('textAnswerCount');
+        const textAnswerCount2 = document.getElementById('textAnswerCount2');
+        const textAnswerTotal = document.getElementById('textAnswerTotal');
+        const trueFalseDisplay = document.getElementById('trueFalseDisplay');
+        const trueAnswerBar = document.getElementById('trueAnswerBar');
+        const trueAnswerCount = document.getElementById('trueAnswerCount');
+        const falseAnswerBar = document.getElementById('falseAnswerBar');
+        const falseAnswerCount = document.getElementById('falseAnswerCount');
+        const questionTypeDisplay = document.getElementById('questionTypeDisplay');
         
         // State variables
         let players = [];
@@ -729,18 +936,86 @@
         });
         
         // Listen for player answers
-        socket.on('player-answered', ({ playerId, playerName, questionIndex, answerIndex, isCorrect }) => {
-            console.log(`${playerName} answered question ${questionIndex}, answer: ${answerIndex}, correct: ${isCorrect}`);
+        socket.on('player-answered', ({ playerId, playerName, questionIndex, answerIndex, textAnswer, isCorrect, answer }) => {
+            console.log(`Player ${playerName} answered question ${questionIndex}, isCorrect: ${isCorrect}, textAnswer: ${textAnswer}`);
             
-            // Update UI to show player answered
-            updateAnswerDistribution();
+            // Update display based on question type
+            const question = quizData.questions[currentQuestionIndex];
+            const questionType = question.questionType || 'multiple-choice';
             
-            // Play sound effect based on correct/incorrect
-            if (isCorrect) {
-                playSound('/sounds/correct-answer.mp3');
+            if (questionType === 'text-answer' && textAnswer !== undefined) {
+                // Handle text answer display
+                updateTextAnswerDisplay(textAnswer, playerName, isCorrect);
+                
+                // Play sound effect
+                playSound('/sounds/answer-received.mp3');
+            } else if (questionType === 'true-false') {
+                // Handle true/false answers
+                const answerValue = answer === true || answer === 'true' ? 'true' : 'false';
+                console.log(`True/False answer: ${answerValue}, correct: ${isCorrect}`);
+                
+                // Update the display based on the answer
+                if (answerValue === 'true') {
+                    trueAnswerCount.textContent = parseInt(trueAnswerCount.textContent || 0) + 1;
+                } else {
+                    falseAnswerCount.textContent = parseInt(falseAnswerCount.textContent || 0) + 1;
+                }
+                
+                // Play sound effect
+                playSound(isCorrect ? '/sounds/correct-answer.mp3' : '/sounds/answer-received.mp3');
+            } else {
+                // Handle multiple choice answers
+                if (answerIndex !== undefined && answerIndex >= 0) {
+                    // Increment the count for this option
+                    const answerCountEl = document.getElementById(`answerCount${answerIndex}`);
+                    if (answerCountEl) {
+                        answerCountEl.textContent = parseInt(answerCountEl.textContent || 0) + 1;
+                    }
+                    
+                    // Play sound effect
+                    playSound(isCorrect ? '/sounds/correct-answer.mp3' : '/sounds/answer-received.mp3');
+                }
             }
         });
-
+        
+        // Enhanced function to update text answer display
+        function updateTextAnswerDisplay(textAnswer, playerName, isCorrect) {
+            // Remove placeholder if present
+            const placeholder = textAnswersList.querySelector('.text-answer-placeholder');
+            if (placeholder) {
+                placeholder.remove();
+            }
+            
+            // Create new answer element
+            const answerEl = document.createElement('div');
+            answerEl.className = 'text-answer-item';
+            if (isCorrect !== undefined) {
+                answerEl.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
+            }
+            
+            answerEl.innerHTML = `
+                <div class="text-answer-content">${textAnswer}</div>
+                <div class="text-answer-user">${playerName}</div>
+                ${isCorrect !== undefined ? 
+                    `<div class="text-answer-status">
+                        <i class="fas fa-${isCorrect ? 'check' : 'times'}"></i>
+                    </div>` : ''}
+            `;
+            
+            // Add to list
+            textAnswersList.appendChild(answerEl);
+            
+            // Update counter
+            const currentCount = parseInt(textAnswerCount.textContent) + 1;
+            textAnswerCount.textContent = currentCount;
+            textAnswerCount2.textContent = currentCount;
+            
+            // Update total counter if not set
+            if (textAnswerTotal.textContent === '?') {
+                textAnswerTotal.textContent = players.length;
+            }
+        }
+        
         // Track player connection status
         socket.on('player-disconnected', (data) => {
             const playerEl = document.querySelector(`.player-item[data-id="${data.playerId}"]`);
@@ -846,20 +1121,59 @@
             questionText.textContent = question.questionText;
             currentQuestion.textContent = index + 1;
             
-            // Reset answer counts
-            for (let i = 0; i < 4; i++) {
-                const answerBar = document.getElementById(`answerBar${i}`);
-                const answerCount = document.getElementById(`answerCount${i}`);
-                
-                if (answerBar) {
-                    answerBar.style.setProperty('--width', '0%');
-                    answerBar.style.border = 'none';
-                    answerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-${getColorForOption(i)}) 0%, #444 0%)`;
-                }
-                
-                if (answerCount) {
-                    answerCount.textContent = '0';
-                }
+            // Hide all display types first
+            answerDistribution.style.display = 'none';
+            textAnswerDisplay.style.display = 'none';
+            trueFalseDisplay.style.display = 'none';
+            
+            // Determine question type
+            const questionType = question.questionType || 'multiple-choice';
+            questionTypeDisplay.textContent = formatQuestionType(questionType);
+            
+            // Show appropriate display based on question type
+            switch (questionType) {
+                case 'text-answer':
+                    // Setup for text answer question
+                    textAnswersList.innerHTML = '<div class="text-answer-placeholder">Waiting for answers...</div>';
+                    textAnswerCount.textContent = '0';
+                    textAnswerDisplay.style.display = 'block';
+                    break;
+                    
+                case 'true-false':
+                    // Setup for true/false question
+                    trueAnswerCount.textContent = '0';
+                    falseAnswerCount.textContent = '0';
+                    trueAnswerBar.style.backgroundImage = 'linear-gradient(to right, var(--kahoot-green) 0%, #444 0%)';
+                    falseAnswerBar.style.backgroundImage = 'linear-gradient(to right, var(--kahoot-red) 0%, #444 0%)';
+                    trueFalseDisplay.style.display = 'block';
+                    break;
+                    
+                case 'multiple-choice':
+                default:
+                    // Reset answer counts for multiple choice
+                    for (let i = 0; i < 4; i++) {
+                        const answerBar = document.getElementById(`answerBar${i}`);
+                        const answerCount = document.getElementById(`answerCount${i}`);
+                        const answerLabel = document.getElementById(`answerLabel${i}`);
+                        
+                        if (answerBar) {
+                            answerBar.style.border = 'none';
+                            answerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-${getColorForOption(i)}) 0%, #444 0%)`;
+                        }
+                        
+                        if (answerCount) {
+                            answerCount.textContent = '0';
+                        }
+                        
+                        // Update option labels if we have options
+                        if (answerLabel && question.options && question.options[i]) {
+                            answerLabel.textContent = question.options[i].text;
+                        } else if (answerLabel) {
+                            answerLabel.textContent = `Option ${String.fromCharCode(65 + i)}`; // A, B, C, D...
+                        }
+                    }
+                    answerDistribution.style.display = 'grid';
+                    break;
             }
             
             // Hide next/results buttons
@@ -895,28 +1209,96 @@
             // Count answers for the current question
             const answerCounts = [0, 0, 0, 0];
             let totalAnswers = 0;
+            let trueAnswers = 0;
+            let falseAnswers = 0;
+            const textAnswers = [];
+            
+            // Get current question to determine type
+            const question = quizData.questions[currentQuestionIndex];
+            const questionType = question.questionType || 'multiple-choice';
             
             players.forEach(player => {
                 const answer = player.answers[currentQuestionIndex];
-                if (answer && answer.answerIndex >= 0 && answer.answerIndex < 4) {
-                    answerCounts[answer.answerIndex]++;
-                    totalAnswers++;
+                if (!answer) return;
+                
+                switch (questionType) {
+                    case 'multiple-choice':
+                        if (answer.answerIndex >= 0 && answer.answerIndex < 4) {
+                            answerCounts[answer.answerIndex]++;
+                            totalAnswers++;
+                        }
+                        break;
+                        
+                    case 'text-answer':
+                        if (answer.textAnswer) {
+                            textAnswers.push({
+                                player: player.name,
+                                answer: answer.textAnswer
+                            });
+                            totalAnswers++;
+                        }
+                        break;
+                        
+                    case 'true-false':
+                        if (answer.answer === true || answer.answer === 'true') {
+                            trueAnswers++;
+                            totalAnswers++;
+                        } else if (answer.answer === false || answer.answer === 'false') {
+                            falseAnswers++;
+                            totalAnswers++;
+                        }
+                        break;
                 }
             });
             
-            // Update UI
-            for (let i = 0; i < 4; i++) {
-                const answerBar = document.getElementById(`answerBar${i}`);
-                const answerCount = document.getElementById(`answerCount${i}`);
-                
-                if (answerBar && answerCount) {
-                    const percentage = totalAnswers > 0 ? (answerCounts[i] / totalAnswers) * 100 : 0;
+            // Update UI based on question type
+            switch (questionType) {
+                case 'multiple-choice':
+                    for (let i = 0; i < 4; i++) {
+                        const answerBar = document.getElementById(`answerBar${i}`);
+                        const answerCount = document.getElementById(`answerCount${i}`);
+                        
+                        if (answerBar && answerCount) {
+                            const percentage = totalAnswers > 0 ? (answerCounts[i] / totalAnswers) * 100 : 0;
+                            
+                            // Update bar width
+                            answerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-${getColorForOption(i)}) ${percentage}%, #444 ${percentage}%)`;
+                            
+                            answerCount.textContent = answerCounts[i];
+                        }
+                    }
+                    break;
                     
-                    // Update bar width
-                    answerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-${getColorForOption(i)}) ${percentage}%, #444 ${percentage}%)`;
+                case 'text-answer':
+                    // Update text answer display
+                    if (textAnswers.length > 0) {
+                        textAnswersList.innerHTML = '';
+                        textAnswers.forEach(item => {
+                            const answerEl = document.createElement('div');
+                            answerEl.className = 'text-answer-item';
+                            answerEl.innerHTML = `
+                                <div class="text-answer-content">${item.answer}</div>
+                                <div class="text-answer-user">${item.player}</div>
+                            `;
+                            textAnswersList.appendChild(answerEl);
+                        });
+                    } else {
+                        textAnswersList.innerHTML = '<div class="text-answer-placeholder">Waiting for answers...</div>';
+                    }
+                    textAnswerCount.textContent = textAnswers.length;
+                    break;
                     
-                    answerCount.textContent = answerCounts[i];
-                }
+                case 'true-false':
+                    // Update true/false display
+                    const truePercentage = totalAnswers > 0 ? (trueAnswers / totalAnswers) * 100 : 0;
+                    const falsePercentage = totalAnswers > 0 ? (falseAnswers / totalAnswers) * 100 : 0;
+                    
+                    trueAnswerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-green) ${truePercentage}%, #444 ${truePercentage}%)`;
+                    falseAnswerBar.style.backgroundImage = `linear-gradient(to right, var(--kahoot-red) ${falsePercentage}%, #444 ${falsePercentage}%)`;
+                    
+                    trueAnswerCount.textContent = trueAnswers;
+                    falseAnswerCount.textContent = falseAnswers;
+                    break;
             }
         }
         
@@ -931,15 +1313,49 @@
             // Notify players that the question has ended
             socket.emit('end-question', { gameCode });
             
-            // Highlight correct options
+            // Get current question to determine type
             const question = quizData.questions[currentQuestionIndex];
-            for (let i = 0; i < question.options.length && i < 4; i++) {
-                const answerBar = document.getElementById(`answerBar${i}`);
-                if (answerBar) {
-                    if (question.options[i].isCorrect) {
-                        answerBar.style.border = '2px solid var(--kahoot-green)';
+            const questionType = question.questionType || 'multiple-choice';
+            
+            // Highlight correct answers based on question type
+            switch (questionType) {
+                case 'multiple-choice':
+                    // Highlight correct options
+                    for (let i = 0; i < question.options.length && i < 4; i++) {
+                        const answerBar = document.getElementById(`answerBar${i}`);
+                        if (answerBar && question.options[i].isCorrect) {
+                            answerBar.style.border = '2px solid var(--kahoot-green)';
+                        }
                     }
-                }
+                    break;
+                    
+                case 'text-answer':
+                    // For text answers, we can highlight the correct answer(s)
+                    if (question.textAnswer && question.textAnswer.correctAnswer) {
+                        const correctAnswerEl = document.createElement('div');
+                        correctAnswerEl.className = 'text-answer-correct';
+                        correctAnswerEl.innerHTML = `
+                            <h4>Correct answer:</h4>
+                            <div>${question.textAnswer.correctAnswer}</div>
+                        `;
+                        
+                        // Insert at the top of the list
+                        if (textAnswersList.firstChild) {
+                            textAnswersList.insertBefore(correctAnswerEl, textAnswersList.firstChild);
+                        } else {
+                            textAnswersList.appendChild(correctAnswerEl);
+                        }
+                    }
+                    break;
+                    
+                case 'true-false':
+                    // Highlight the correct true/false answer
+                    if (question.isTrueCorrect) {
+                        trueAnswerBar.style.border = '2px solid var(--kahoot-green)';
+                    } else {
+                        falseAnswerBar.style.border = '2px solid var(--kahoot-green)';
+                    }
+                    break;
             }
             
             // Show next button or results button
@@ -1034,6 +1450,22 @@
                 audio.play();
             } catch (e) {
                 console.log('Sound play error:', e);
+            }
+        }
+        
+        // Helper function to format question type for display
+        function formatQuestionType(type) {
+            switch (type) {
+                case 'multiple-choice':
+                    return 'Multiple Choice';
+                case 'text-answer':
+                    return 'Text Answer';
+                case 'true-false':
+                    return 'True/False';
+                case 'ordering':
+                    return 'Ordering';
+                default:
+                    return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
             }
         }
     });

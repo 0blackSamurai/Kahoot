@@ -12,12 +12,27 @@ const mediaSchema = new Schema({
   alt: { type: String }
 });
 
+const textAnswerSchema = new Schema({
+  correctAnswer: { type: String, required: true },
+  caseSensitive: { type: Boolean, default: false },
+  exactMatch: { type: Boolean, default: true },
+  alternativeAnswers: [{ type: String }]
+});
+
 const questionSchema = new Schema({
   questionText: { type: String, required: true },
+  questionType: { 
+    type: String, 
+    enum: ['multiple-choice', 'text-answer', 'true-false', 'ordering'],
+    default: 'multiple-choice'
+  },
   options: [{ 
     text: { type: String, required: true },
     isCorrect: { type: Boolean, default: false }
   }],
+  textAnswer: textAnswerSchema,
+  isTrueCorrect: { type: Boolean },
+  orderItems: [{ type: String }],
   timeLimit: { type: Number, default: 30 }, // Time limit in seconds
   points: { 
     type: String, 

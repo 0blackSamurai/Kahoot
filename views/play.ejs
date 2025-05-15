@@ -23,8 +23,8 @@
         <!-- Text Answer Question -->
         <div id="textAnswerContainer" class="text-answer question-type-container" style="display:none">
             <div class="text-answer-box">
-                <input type="text" id="textAnswerInput" class="text-answer-input" placeholder="Type your answer here...">
-                <button id="submitTextAnswer" class="btn-submit-answer">Submit</button>
+                <input type="text" id="textAnswerInput" class="text-answer-input" placeholder="Skriv inn svaret ditt her...">
+                <button id="submitTextAnswer" class="btn-submit-answer">Send svar</button>
             </div>
         </div>
         
@@ -439,6 +439,7 @@
         display: flex;
         flex-direction: column;
         gap: 15px;
+        position: relative;
     }
     
     .text-answer-input {
@@ -449,6 +450,12 @@
         border-radius: 10px;
         text-align: center;
         color: #333;
+        transition: all 0.3s ease;
+    }
+    
+    .text-answer-input:focus {
+        box-shadow: 0 0 0 2px rgba(142, 82, 245, 0.3);
+        border-color: var(--kahoot-purple);
     }
     
     .btn-submit-answer {
@@ -461,11 +468,60 @@
         font-weight: bold;
         cursor: pointer;
         transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .btn-submit-answer:hover {
         transform: translateY(-3px);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .btn-submit-answer:disabled {
+        background-color: #888;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .answer-feedback {
+        margin-top: 15px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 1.1rem;
+        font-weight: 500;
+        animation: fadeIn 0.5s;
+    }
+    
+    .answer-feedback.correct {
+        background-color: rgba(38, 137, 12, 0.2);
+        color: var(--kahoot-green);
+    }
+    
+    .answer-feedback.incorrect {
+        background-color: rgba(226, 27, 60, 0.2);
+        color: var(--kahoot-red);
+    }
+    
+    .answer-feedback.timeout {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #ffc107;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .shake {
+        animation: shake 0.5s;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
     }
     
     /* Ordering styles */
@@ -669,7 +725,7 @@
                     loadMultipleChoiceQuestion(question);
                     break;
                 case 'text-answer':
-                    loadTextAnswerQuestion();
+                    loadTextAnswerQuestion(question);
                     break;
                 case 'ordering':
                     loadOrderingQuestion(question);
@@ -711,10 +767,21 @@
             });
         }
         
-        function loadTextAnswerQuestion() {
+        function loadTextAnswerQuestion(question) {
             textAnswerContainerEl.style.display = 'flex';
             textAnswerInputEl.value = '';
-            textAnswerInputEl.focus();
+            
+            // Set placeholder text if provided
+            if (question.textAnswer && question.textAnswer.answerPlaceholder) {
+                textAnswerInputEl.placeholder = question.textAnswer.answerPlaceholder;
+            } else {
+                textAnswerInputEl.placeholder = "Skriv inn svaret ditt her...";
+            }
+            
+            // Focus on the input for better UX
+            setTimeout(() => {
+                textAnswerInputEl.focus();
+            }, 300);
             
             submitTextAnswerBtn.onclick = () => {
                 submitTextAnswer(textAnswerInputEl.value);
@@ -726,6 +793,103 @@
                     submitTextAnswer(textAnswerInputEl.value);
                 }
             };
+        }
+        
+        function submitTextAnswer(answer) {
+            if (answered) return; // Prevent multiple submissions
+            
+            // Don't submit if answer is empty
+            if (!answer.trim()) {
+                // Add shake animation to the input
+                textAnswerInputEl.classList.add('shake');
+                setTimeout(() => {
+                    textAnswerInputEl.classList.remove('shake');
+                }, 500);
+                return;
+            }
+            
+            answered = true;
+            clearInterval(timer);
+            
+            const question = questions[currentQuestionIndex];
+            let isCorrect = false;
+            
+            if (question.textAnswer) {
+                const userAnswer = answer.trim();
+                
+                // If we have the correct answer (local play mode)
+                if (question.textAnswer.correctAnswer) {
+                    const correctAnswer = question.textAnswer.correctAnswer;
+                    const caseSensitive = question.textAnswer.caseSensitive || false;
+                    const exactMatch = question.textAnswer.exactMatch || false;
+                    const alternativeAnswers = question.textAnswer.alternativeAnswers || [];
+                    
+                    // Check if answer is correct using the same logic as the server
+                    if (caseSensitive) {
+                        if (exactMatch) {
+                            isCorrect = userAnswer === correctAnswer || 
+                                      alternativeAnswers.includes(userAnswer);
+                        } else {
+                            isCorrect = correctAnswer.includes(userAnswer) || 
+                                      alternativeAnswers.some(alt => alt.includes(userAnswer));
+                        }
+                    } else {
+                        const lowerUserAnswer = userAnswer.toLowerCase();
+                        const lowerCorrectAnswer = correctAnswer.toLowerCase();
+                        const lowerAlternatives = alternativeAnswers.map(alt => alt.toLowerCase());
+                        
+                        if (exactMatch) {
+                            isCorrect = lowerUserAnswer === lowerCorrectAnswer || 
+                                      lowerAlternatives.includes(lowerUserAnswer);
+                        } else {
+                            isCorrect = lowerCorrectAnswer.includes(lowerUserAnswer) || 
+                                      lowerAlternatives.some(alt => alt.includes(lowerUserAnswer));
+                        }
+                    }
+                }
+            }
+            
+            // Save user's answer
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                textAnswer: answer,
+                correct: isCorrect,
+                type: 'text-answer'
+            });
+            
+            // Update score if correct
+            if (isCorrect) {
+                score += calculatePoints(timeLeft);
+                updateScore();
+                textAnswerInputEl.style.borderColor = "var(--kahoot-green)";
+                textAnswerInputEl.style.backgroundColor = "rgba(38, 137, 12, 0.2)";
+            } else {
+                textAnswerInputEl.style.borderColor = "var(--kahoot-red)";
+                textAnswerInputEl.style.backgroundColor = "rgba(226, 27, 60, 0.2)";
+            }
+            
+            textAnswerInputEl.disabled = true;
+            submitTextAnswerBtn.disabled = true;
+            
+            // Show feedback
+            const feedbackEl = document.createElement('div');
+            feedbackEl.className = isCorrect ? 'answer-feedback correct' : 'answer-feedback incorrect';
+            
+            // Only show what the correct answer was if we have that information
+            if (question.textAnswer && question.textAnswer.correctAnswer) {
+                feedbackEl.innerHTML = isCorrect ? 
+                    '<i class="fas fa-check-circle"></i> Correct!' : 
+                    `<i class="fas fa-times-circle"></i> Incorrect! The answer was: <strong>${question.textAnswer.correctAnswer}</strong>`;
+            } else {
+                feedbackEl.innerHTML = isCorrect ? 
+                    '<i class="fas fa-check-circle"></i> Correct!' : 
+                    '<i class="fas fa-times-circle"></i> Incorrect!';
+            }
+            
+            textAnswerContainerEl.appendChild(feedbackEl);
+            
+            // Show next button
+            showNextButton();
         }
         
         function loadOrderingQuestion(question) {
@@ -835,80 +999,6 @@
                 // Show next button
                 showNextButton();
             }, 500);
-        }
-        
-        // Text answer handling
-        function submitTextAnswer(answer) {
-            if (answered) return; // Prevent multiple submissions
-            answered = true;
-            clearInterval(timer);
-            
-            const question = questions[currentQuestionIndex];
-            let isCorrect = false;
-            
-            if (question.textAnswer) {
-                const userAnswer = answer.trim();
-                const correctAnswer = question.textAnswer.correctAnswer;
-                const caseSensitive = question.textAnswer.caseSensitive || false;
-                const exactMatch = question.textAnswer.exactMatch || false;
-                const alternativeAnswers = question.textAnswer.alternativeAnswers || [];
-                
-                // Check if answer is correct
-                if (caseSensitive) {
-                    if (exactMatch) {
-                        isCorrect = userAnswer === correctAnswer || 
-                                   alternativeAnswers.includes(userAnswer);
-                    } else {
-                        isCorrect = correctAnswer.includes(userAnswer) || 
-                                   alternativeAnswers.some(alt => alt.includes(userAnswer));
-                    }
-                } else {
-                    const lowerUserAnswer = userAnswer.toLowerCase();
-                    const lowerCorrectAnswer = correctAnswer.toLowerCase();
-                    const lowerAlternatives = alternativeAnswers.map(alt => alt.toLowerCase());
-                    
-                    if (exactMatch) {
-                        isCorrect = lowerUserAnswer === lowerCorrectAnswer || 
-                                   lowerAlternatives.includes(lowerUserAnswer);
-                    } else {
-                        isCorrect = lowerCorrectAnswer.includes(lowerUserAnswer) || 
-                                   lowerAlternatives.some(alt => alt.includes(lowerUserAnswer));
-                    }
-                }
-            }
-            
-            // Save user's answer
-            userAnswers.push({
-                questionIndex: currentQuestionIndex,
-                textAnswer: answer,
-                correct: isCorrect,
-                type: 'text-answer'
-            });
-            
-            // Update score if correct
-            if (isCorrect) {
-                score += calculatePoints(timeLeft);
-                updateScore();
-                textAnswerInputEl.style.borderColor = "var(--kahoot-green)";
-                textAnswerInputEl.style.backgroundColor = "rgba(38, 137, 12, 0.2)";
-            } else {
-                textAnswerInputEl.style.borderColor = "var(--kahoot-red)";
-                textAnswerInputEl.style.backgroundColor = "rgba(226, 27, 60, 0.2)";
-            }
-            
-            textAnswerInputEl.disabled = true;
-            submitTextAnswerBtn.disabled = true;
-            
-            // Show feedback
-            const feedbackEl = document.createElement('div');
-            feedbackEl.className = isCorrect ? 'answer-feedback correct' : 'answer-feedback incorrect';
-            feedbackEl.innerHTML = isCorrect ? 
-                '<i class="fas fa-check-circle"></i> Correct!' : 
-                `<i class="fas fa-times-circle"></i> Incorrect! The answer was: <strong>${question.textAnswer?.correctAnswer || 'N/A'}</strong>`;
-            textAnswerContainerEl.appendChild(feedbackEl);
-            
-            // Show next button
-            showNextButton();
         }
         
         // Ordering answer handling

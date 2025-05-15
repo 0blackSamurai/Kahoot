@@ -236,6 +236,37 @@
     </div>
 </div>
 
+<!-- Text answer question type form -->
+<div class="question-form text-answer-form" style="display: none;">
+    <div class="form-section">
+        <label for="text-answer-correct">Riktig svar:</label>
+        <div class="input-group">
+            <input type="text" class="text-answer-correct" placeholder="Angi riktig svar">
+            <div class="text-answer-options">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="text-case-sensitive" class="text-case-sensitive">
+                    <label for="text-case-sensitive">Store/små bokstaver er forskjellige</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="text-exact-match" class="text-exact-match" checked>
+                    <label for="text-exact-match">Krever eksakt tekst</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-section">
+        <label>Alternative svar (valgfritt):</label>
+        <div class="alternative-answers">
+            <div class="alternative-answer-container">
+                <input type="text" class="alternative-answer" placeholder="Legge til alternativt svar">
+                <button type="button" class="btn-remove-alt-answer">×</button>
+            </div>
+        </div>
+        <button type="button" class="btn-add-alt-answer">Legg til alternativt svar</button>
+    </div>
+</div>
+
 <!-- Question Navigation Item Template (hidden) -->
 <div id="questionNavTemplate" style="display:none">
     <div class="question-item" data-question-id="{QID}">
@@ -606,6 +637,28 @@
         // Add first question automatically
         const firstQid = addNewQuestion();
         showQuestion(firstQid);
+
+        // Initialize the text answer form
+        function initTextAnswerForm() {
+            const form = document.querySelector('.text-answer-form');
+            
+            // Add alternative answer button
+            form.querySelector('.btn-add-alt-answer').addEventListener('click', function() {
+                const container = document.createElement('div');
+                container.className = 'alternative-answer-container';
+                container.innerHTML = `
+                    <input type="text" class="alternative-answer" placeholder="Legg til alternativt svar">
+                    <button type="button" class="btn-remove-alt-answer">×</button>
+                `;
+                
+                form.querySelector('.alternative-answers').appendChild(container);
+                
+                // Add event listener to remove button
+                container.querySelector('.btn-remove-alt-answer').addEventListener('click', function() {
+                    container.remove();
+                });
+            });
+        }
     });
 </script>
 
@@ -690,3 +743,4 @@
 <%- include('./partials/footer.ejs') %>
 </body>
 </html>
+``` 

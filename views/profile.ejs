@@ -1,119 +1,230 @@
 <%- include('./partials/header') %>
 <link rel="stylesheet" href="/css/kahoot-dark.css">
 
-
-
-<div class="quizzes-container">
-    <h2 class="section-title"><i class="fas fa-folder"></i> Your Quizzes</h2>
-    <% if (quizzes && quizzes.length > 0) { %>
-        <div class="quiz-grid">
-            <% quizzes.forEach(quiz => { %>
-                <div class="quiz-card">
-                    <div class="quiz-card-header">
-                        <h3><%= quiz.title %></h3>
-                        <% if (quiz.isPublic) { %>
-                            <span class="badge-public"><i class="fas fa-globe"></i> Public</span>
-                        <% } else { %>
-                            <span class="badge-private"><i class="fas fa-lock"></i> Private</span>
-                        <% } %>
-                    </div>
-                    
-                    <div class="quiz-card-body">
-                        <p class="quiz-description">
-                            <%= quiz.description ? quiz.description : 'No description provided.' %>
-                        </p>
+<div class="profile-container">
+    <div class="profile-header">
+        <h1><i class="fas fa-user-circle"></i> Welcome, <%= user.username %></h1>
+        <div class="profile-stats">
+            <div class="stat-item">
+                <i class="fas fa-gamepad"></i>
+                <span class="stat-value"><%= userQuizzes.length %></span>
+                <span class="stat-label">Quizzes</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-actions">
+        <a href="/quiz/create" class="btn-primary">
+            <i class="fas fa-plus"></i> Create New Quiz
+        </a>
+        <a href="/quiz/my-quizzes" class="btn-secondary">
+            <i class="fas fa-folder"></i> My Quizzes
+        </a>
+        <a href="/quiz/all" class="btn-secondary">
+            <i class="fas fa-globe"></i> Discover Quizzes
+        </a>
+    </div>
+    
+    <div class="recent-quizzes">
+        <h2>Your Recent Quizzes</h2>
+        
+        <% if (userQuizzes && userQuizzes.length > 0) { %>
+            <div class="quiz-cards">
+                <% userQuizzes.slice(0, 3).forEach(quiz => { %>
+                    <div class="quiz-card" data-id="<%= quiz._id %>">data-id="<%= quiz._id %>">
+                        <div class="quiz-card-header">
+                            <h3><%= quiz.title %></h3>
+                            <% if (quiz.isPublic) { %>
+                                <span class="badge-public"><i class="fas fa-globe"></i> Public</span>
+                            <% } else { %>
+                                <span class="badge-private"><i class="fas fa-lock"></i> Private</span>
+                            <% } %>
+                        </div>
                         
-                        <div class="quiz-meta">
-                            <span><i class="fas fa-question-circle"></i> <%= quiz.questions.length %> questions</span>
-                            <span><i class="fas fa-calendar-alt"></i> <%= new Date(quiz.createdAt).toLocaleDateString() %></span>
+                        <div class="quiz-card-body">
+                            <p class="quiz-meta">
+                                <span><i class="fas fa-question-circle"></i> <%= quiz.questions.length %> questions</span>
+                            </p>
+                        </div>
+                        
+                        <div class="quiz-card-footer">
+                            <a href="/quiz/play/<%= quiz._id %>" class="btn-play">
+                                <i class="fas fa-play"></i> Play
+                            </a>
+                            <a href="/quiz/host/<%= quiz._id %>" class="btn-host">
+                                <i class="fas fa-users"></i> Host
+                            </a>
+                            <a href="/quiz/edit/<%= quiz._id %>" class="btn-edit">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <button class="btn-delete" data-id="<%= quiz._id %>" data-title="<%= quiz.title %>">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="quiz-card-footer">
-                        <a href="/quiz/host/<%= quiz._id %>" class="btn-host">
-                            <i class="fas fa-play"></i> Host
-                        </a>
-                        <a href="/quiz/edit/<%= quiz._id %>" class="btn-edit">
-                            <i class="fas fa-edit"></i> Edit
-                        </a>
-                        <a href="#" onclick="deleteQuiz('<%= quiz._id %>')" class="btn-delete">
-                            <i class="fas fa-trash"></i> Delete
-                        </a>
-                       
-                    </div>
+                <% }) %>
+            </div>
+            
+            <% if (userQuizzes.length > 3) { %>
+                <div class="view-all">
+                    <a href="/quiz/my-quizzes">View all your quizzes <i class="fas fa-arrow-right"></i></a>
                 </div>
-            <% }) %>
-        </div>
-    <% } else { %>
-        <div class="empty-state">
-            <i class="fas fa-folder-open"></i>
-            <h2>No quizzes found</h2>
-            <p>You haven't created any quizzes yet. Get started by creating your first quiz!</p>
-            <a href="/quiz/create" class="btn-primary btn-large">
-                <i class="fas fa-plus"></i> Create Your First Quiz
+            <% } %>
+        <% } else { %>
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h3>No quizzes yet</h3>
+                <p>Create your first quiz to get started!</p>
+                <a href="/quiz/create" class="btn-primary btn-large">
+                    <i class="fas fa-plus"></i> Create Your First Quiz
+                </a>
+            </div>
+        <% } %>
+    </div>
+    
+    <div class="profile-section">
+        <h2>Play or Host a Game</h2>
+        <div class="game-options">
+            <a href="/quiz/join" class="game-option-card">
+                <div class="game-option-icon">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+                <div class="game-option-info">
+                    <h3>Join a Game</h3>
+                    <p>Enter a game code to join a quiz hosted by someone else</p>
+                </div>
+            </a>
+            <a href="/quiz/my-quizzes" class="game-option-card">
+                <div class="game-option-icon">
+                    <i class="fas fa-broadcast-tower"></i>
+                </div>
+                <div class="game-option-info">
+                    <h3>Host a Game</h3>
+                    <p>Choose one of your quizzes and host it for others to join</p>
+                </div>
             </a>
         </div>
-    <% } %>
+    </div>
 </div>
-<div class="header-actions">
-    <a href="/quiz/create" class="btn-primary"><i class="fas fa-plus"></i> Create New Quiz</a>
+
+<!-- Modal for Delete Confirmation -->
+<div id="deleteConfirmModal" class="modal delete-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Confirm Deletion</h3>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete the quiz:</p>
+            <p class="quiz-title-display"></p>
+            <p class="warning">This action cannot be undone!</p>
+        </div>
+        <div class="modal-footer">
+            <button id="cancelDelete" class="btn-cancel">Cancel</button>
+            <button id="confirmDelete" class="btn-confirm-delete">Delete</button>
+        </div>
+    </div>
 </div>
 
 <style>
-    .quizzes-container {
-        padding: 1rem 2rem;
+    .profile-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
     }
     
-    .section-title {
-        color: var(--dark-text);
-        margin-bottom: 1.5rem;
+    .profile-header {
+        background: linear-gradient(to right, var(--kahoot-purple), var(--kahoot-blue));
+        border-radius: 12px;
+        padding: 30px;
+        margin-bottom: 25px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .profile-header h1 {
+        margin: 0;
+        font-size: 2rem;
+    }
+    
+    .profile-stats {
+        display: flex;
+        gap: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        background-color: rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: 8px;
+    }
+    
+    .stat-value {
+        display: block;
         font-size: 1.5rem;
+        font-weight: bold;
     }
     
-    .section-title i {
-        color: var(--kahoot-light-purple);
-        margin-right: 0.5rem;
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
     }
     
-    .quiz-grid {
+    .profile-actions {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .recent-quizzes {
+        margin-bottom: 40px;
+    }
+    
+    .recent-quizzes h2 {
+        margin-bottom: 20px;
+        color: white;
+        font-size: 1.7rem;
+    }
+    
+    .quiz-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
     }
     
     .quiz-card {
         background-color: var(--dark-card-bg);
         border-radius: 10px;
         overflow: hidden;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         transition: transform 0.2s, box-shadow 0.2s;
     }
     
     .quiz-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
     }
     
     .quiz-card-header {
         background-color: var(--kahoot-purple);
-        padding: 1rem;
+        padding: 15px;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
     
     .quiz-card-header h3 {
-        color: white;
         margin: 0;
+        color: white;
         font-size: 1.2rem;
-        font-weight: 600;
     }
     
     .badge-public, .badge-private {
         font-size: 0.8rem;
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-weight: 500;
+        padding: 3px 8px;
+        border-radius: 20px;
     }
     
     .badge-public {
@@ -122,151 +233,369 @@
     }
     
     .badge-private {
-        background-color: var(--dark-input-bg);
+        background-color: var(--dark-secondary-bg);
         color: var(--dark-text);
     }
     
     .quiz-card-body {
-        padding: 1rem;
-        min-height: 100px;
-    }
-    
-    .quiz-description {
-        margin: 0 0 1rem 0;
-        color: var(--dark-text-secondary);
-        font-size: 0.9rem;
-        line-height: 1.4;
-        height: 2.8rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
+        padding: 15px;
     }
     
     .quiz-meta {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
         color: var(--dark-text-secondary);
-    }
-    
-    .quiz-meta span {
-        display: flex;
-        align-items: center;
-    }
-    
-    .quiz-meta i {
-        margin-right: 5px;
+        font-size: 0.9rem;
+        margin: 0;
     }
     
     .quiz-card-footer {
         display: flex;
         border-top: 1px solid var(--dark-border);
-        padding: 0.75rem;
+        padding: 10px;
     }
     
-    .btn-host, .btn-edit, .btn-delete {
-        padding: 0.5rem 1rem;
+    .btn-play, .btn-host, .btn-edit, .btn-delete {
+        padding: 8px;
         border-radius: 5px;
-        text-align: center;
-        color: white;
-        font-size: 0.9rem;
-        font-weight: 500;
         text-decoration: none;
-        cursor: pointer;
-        margin-right: 0.5rem;
-        display: inline-flex;
+        font-size: 0.9rem;
+        display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .btn-play {
+        background-color: var(--kahoot-green);
+        color: white;
+        flex: 1;
+        margin-right: 5px;
     }
     
     .btn-host {
-        background-color: var(--kahoot-green);
+        background-color: var(--kahoot-blue);
+        color: white;
         flex: 1;
+        margin-right: 5px;
     }
     
     .btn-edit {
-        background-color: var(--kahoot-blue);
+        background-color: var(--dark-secondary-bg);
+        color: var(--dark-text);
+        width: 40px;
+        margin-right: 5px;
     }
     
     .btn-delete {
         background-color: var(--kahoot-red);
+        color: white;
+        width: 40px;
     }
     
-    .btn-host:hover, .btn-edit:hover, .btn-delete:hover {
-        opacity: 0.9;
+    .btn-play:hover, .btn-host:hover, .btn-edit:hover, .btn-delete:hover {
         transform: translateY(-2px);
+        opacity: 0.9;
+    }
+    
+    .view-all {
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .view-all a {
+        color: var(--kahoot-light-purple);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .view-all a:hover {
+        opacity: 0.8;
     }
     
     .empty-state {
         text-align: center;
-        padding: 3rem 1rem;
         background-color: var(--dark-card-bg);
         border-radius: 10px;
-        max-width: 500px;
-        margin: 2rem auto;
+        padding: 40px 20px;
     }
     
     .empty-state i {
         font-size: 3rem;
         color: var(--kahoot-light-purple);
-        margin-bottom: 1rem;
+        margin-bottom: 15px;
     }
     
-    .empty-state h2 {
-        margin: 0 0 1rem 0;
-        color: var(--dark-text);
+    .empty-state h3 {
+        color: white;
+        margin-bottom: 10px;
+        font-size: 1.5rem;
     }
     
     .empty-state p {
-        margin-bottom: 2rem;
         color: var(--dark-text-secondary);
+        margin-bottom: 20px;
     }
     
     .btn-large {
-        font-size: 1rem;
-        padding: 0.75rem 1.5rem;
+        padding: 12px 25px;
+        font-size: 1.1rem;
+    }
+    
+    .profile-section {
+        margin-bottom: 40px;
+    }
+    
+    .profile-section h2 {
+        margin-bottom: 20px;
+        color: white;
+        font-size: 1.7rem;
+    }
+    
+    .game-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    .game-option-card {
+        background-color: var(--dark-card-bg);
+        border-radius: 10px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .game-option-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    .game-option-icon {
+        background-color: var(--kahoot-purple);
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 20px;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .game-option-icon i {
+        transform: scale(1.2);
+    }
+    
+    .game-option-info h3 {
+        margin: 0 0 5px 0;
+        color: white;
+    }
+    
+    .game-option-info p {
+        color: var(--dark-text-secondary);
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    
+    /* Delete modal styles */
+    .delete-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .delete-modal .modal-content {
+        background-color: var(--dark-card-bg);
+        border-radius: 12px;
+        width: 90%;
+        max-width: 450px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        animation: fadeIn 0.3s;
+    }
+    
+    .delete-modal .modal-header {
+        background-color: var(--kahoot-red);
+        color: white;
+        padding: 15px;
+        border-radius: 12px 12px 0 0;
+        text-align: center;
+    }
+    
+    .delete-modal .modal-body {
+        padding: 20px;
+        color: var(--dark-text);
+        text-align: center;
+    }
+    
+    .delete-modal .quiz-title-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: white;
+        margin: 10px 0;
+        padding: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+    }
+    
+    .delete-modal .warning {
+        color: var(--kahoot-red);
+        font-weight: bold;
+        margin-top: 15px;
+    }
+    
+    .delete-modal .modal-footer {
+        padding: 15px;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        border-top: 1px solid var(--dark-border);
+    }
+    
+    .btn-cancel, .btn-confirm-delete {
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        border: none;
+    }
+    
+    .btn-cancel {
+        background-color: var(--dark-secondary-bg);
+        color: var(--dark-text);
+    }
+    
+    .btn-confirm-delete {
+        background-color: var(--kahoot-red);
+        color: white;
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; transform: scale(1); }
+        to { opacity: 0; transform: scale(0.8); }
+    }
+    
+    @media (max-width: 768px) {
+        .profile-header {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .profile-stats {
+            margin-top: 20px;
+        }
+        
+        .profile-actions {
+            flex-direction: column;
+        }
+        
+        .profile-actions a {
+            width: 100%;
+            text-align: center;
+        }
+        
+        .game-options {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Dark mode toggle functionality
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        const body = document.body;
-        const icon = darkModeToggle.querySelector('i');
-        
-        // Check local storage for user preference
-        const savedDarkMode = localStorage.getItem('darkMode');
-        if (savedDarkMode === 'enabled') {
-            body.classList.add('dark-mode');
-            icon.className = 'fas fa-sun';
-        } else if (savedDarkMode === 'disabled') {
-            body.classList.remove('dark-mode');
-            icon.className = 'fas fa-moon';
-        }
-        
-        darkModeToggle.addEventListener('click', function() {
-            body.classList.toggle('dark-mode');
-            
-            // Save preference to local storage
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('darkMode', 'enabled');
-                icon.className = 'fas fa-sun';
-            } else {
-                localStorage.setItem('darkMode', 'disabled');
-                icon.className = 'fas fa-moon';
+        const deleteButtons = document.querySelectorAll('.btn-delete');
+        const deleteModal = document.getElementById('deleteConfirmModal');
+        const quizTitleDisplay = deleteModal.querySelector('.quiz-title-display');
+        const cancelDeleteBtn = document.getElementById('cancelDelete');
+        const confirmDeleteBtn = document.getElementById('confirmDelete');
+        let quizIdToDelete = null;
+
+        // Show delete confirmation modal when delete button is clicked
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                quizIdToDelete = this.getAttribute('data-id');
+                const quizTitle = this.getAttribute('data-title');
+                quizTitleDisplay.textContent = quizTitle;
+                deleteModal.style.display = 'flex';
+            });
+        });
+
+        // Close modal when cancel is clicked
+        cancelDeleteBtn.addEventListener('click', function() {
+            deleteModal.style.display = 'none';
+        });
+
+        // Handle delete confirmation
+        confirmDeleteBtn.addEventListener('click', function() {
+            if (quizIdToDelete) {
+                // Send DELETE request to server
+                fetch(`/quiz/delete/${quizIdToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to delete quiz');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Quiz deleted successfully:', data);
+                    // Remove the quiz card from the UI
+                    const quizCard = document.querySelector(`.quiz-card[data-id="${quizIdToDelete}"]`);
+                    if (quizCard) {
+                        quizCard.style.animation = 'fadeOut 0.5s';
+                        setTimeout(() => {
+                            quizCard.remove();
+                            
+                            // Check if there are no quizzes left
+                            const remainingQuizCards = document.querySelectorAll('.quiz-card');
+                            if (remainingQuizCards.length === 0) {
+                                // Show empty state if no quizzes left
+                                const quizCards = document.querySelector('.quiz-cards');
+                                quizCards.innerHTML = `
+                                    <div class="empty-state">
+                                        <i class="fas fa-folder-open"></i>
+                                        <h3>No quizzes yet</h3>
+                                        <p>Create your first quiz to get started!</p>
+                                        <a href="/quiz/create" class="btn-primary btn-large">
+                                            <i class="fas fa-plus"></i> Create Your First Quiz
+                                        </a>
+                                    </div>
+                                `;
+                            }
+                        }, 500);
+                    }
+                    deleteModal.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error deleting quiz:', error);
+                    alert('Failed to delete quiz. Please try again.');
+                    deleteModal.style.display = 'none';
+                });
+            }
+        });
+
+        // Close modal if clicked outside
+        window.addEventListener('click', function(event) {
+            if (event.target === deleteModal) {
+                deleteModal.style.display = 'none';
             }
         });
     });
-
-    function deleteQuiz(quizId) {
-        if (confirm('Are you sure you want to delete this quiz?')) {
-            window.location.href = `/quiz/delete/${quizId}`;
-        }
-    }
 </script>
 
 <%- include('./partials/footer') %>

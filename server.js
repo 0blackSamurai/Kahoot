@@ -214,7 +214,182 @@ io.on('connection', (socket) => {
         }, 500);
     });
 
-    // Continue with the rest of your existing socket handlers...
+    // Add new handler for getting question data
+    socket.on('get-question', ({ gameCode, questionIndex }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        const quiz = gameRooms[gameCode].quiz;
+        if (!quiz || !quiz.questions || questionIndex >= quiz.questions.length) return;
+        
+        const question = quiz.questions[questionIndex];
+        
+        // Log the question type for debugging
+        console.log(`Sending question data. Type: ${question.questionType || 'multiple-choice'}`);
+        
+        // Send question data without revealing answers
+        socket.emit('question-data', {
+            questionText: question.questionText,
+            questionType: question.questionType || 'multiple-choice', // Ensure question type is properly set
+            timeLimit: question.timeLimit || 30,
+            totalQuestions: quiz.questions.length,
+            options: question.options ? question.options.map(opt => ({
+                text: opt.text
+                // Remove isCorrect to avoid cheating
+            })) : [],
+            // Include empty textAnswer structure for text questions to ensure client knows it's a text question
+            textAnswer: question.questionType === 'text-answer' ? {
+                placeholder: "Skriv inn svaret her..."
+            } : undefined
+        });
+    });
+
+    // Add handler for getting current game state
+    socket.on('get-game-state', ({ gameCode }) => {
+        if (!gameRooms[gameCode]) {
+            socket.emit('game-not-found');
+            return;
+        }
+        
+        const game = gameRooms[gameCode];
+        
+        // Send current game state
+        socket.emit('game-state', {
+            status: game.status,
+            currentQuestion: game.currentQuestion,
+            totalQuestions: game.quiz.questions.length
+        });
+    });
+
+    // Handle player submitted answers for all question types
+    socket.on('submit-answer', ({ gameCode, questionIndex, answerIndex, textAnswer, answer, playerId, timeLeft }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        const game = gameRooms[gameCode];
+        const question = game.quiz.questions[questionIndex];
+        if (!question) return;
+        
+        // Log incoming answer data for debugging
+        console.log(`Received answer from player. QuestionType: ${question.questionType}, TextAnswer: ${textAnswer !== undefined ? 'present' : 'absent'}`);
+        
+        // Find the player
+        const playerIndex = game.players.findIndex(p => 
+            (playerId && p.id === playerId) || p.socketId === socket.id
+        );
+        
+        if (playerIndex === -1) return;
+        
+        const player = game.players[playerIndex];
+        
+        // Determine if answer is correct based on question type
+        let isCorrect = false;
+        let points = 0;
+        
+        // Calculate base points for time remaining (max 1000)
+        const basePoints = Math.floor(1000 * (timeLeft / (question.timeLimit || 30)));
+        
+        const questionType = question.questionType || 'multiple-choice';
+        
+        switch (questionType) {
+            case 'multiple-choice':
+                // Multiple choice handling
+                if (answerIndex >= 0 && question.options && answerIndex < question.options.length) {
+                    isCorrect = question.options[answerIndex].isCorrect === true;
+                }
+                break;
+                
+            case 'text-answer':
+                // Improved text answer processing
+                console.log(`Processing text answer: "${textAnswer}" from player ${player.name}`);
+                
+                if (textAnswer !== undefined && question.textAnswer) {
+                    const userAnswer = String(textAnswer).trim();
+                    const correctAnswer = question.textAnswer.correctAnswer;
+                    const caseSensitive = question.textAnswer.caseSensitive || false;
+                    const exactMatch = question.textAnswer.exactMatch || false;
+                    const alternativeAnswers = question.textAnswer.alternativeAnswers || [];
+                    
+                    console.log(`Text answer settings: caseSensitive=${caseSensitive}, exactMatch=${exactMatch}`);
+                    console.log(`Correct answer: "${correctAnswer}"`);
+                    
+                    // Check if answer is correct based on settings
+                    if (caseSensitive) {
+                        if (exactMatch) {
+                            isCorrect = userAnswer === correctAnswer || 
+                                      alternativeAnswers.includes(userAnswer);
+                        } else {
+                            isCorrect = correctAnswer.includes(userAnswer) || 
+                                      alternativeAnswers.some(alt => alt.includes(userAnswer));
+                        }
+                    } else {
+                        const lowerUserAnswer = userAnswer.toLowerCase();
+                        const lowerCorrectAnswer = correctAnswer.toLowerCase();
+                        const lowerAlternatives = alternativeAnswers.map(alt => alt.toLowerCase());
+                        
+                        if (exactMatch) {
+                            isCorrect = lowerUserAnswer === lowerCorrectAnswer || 
+                                      lowerAlternatives.includes(lowerUserAnswer);
+                        } else {
+                            isCorrect = lowerCorrectAnswer.includes(lowerUserAnswer) || 
+                                      lowerAlternatives.some(alt => alt.includes(lowerUserAnswer));
+                        }
+                    }
+                    
+                    console.log(`Text answer result: "${textAnswer}" is ${isCorrect ? 'CORRECT' : 'WRONG'}`);
+                }
+                break;
+                
+            case 'true-false':
+                // True-false handling
+                const boolAnswer = (answer === true || answer === 'true');
+                isCorrect = boolAnswer === question.isTrueCorrect;
+                break;
+        }
+        
+        // Award points if correct
+        if (isCorrect) {
+            points = basePoints;
+            
+            // Apply point multiplier if defined in question
+            if (question.points === 'double') {
+                points *= 2;
+            } else if (question.points === 'no-points') {
+                points = 0;
+            }
+            
+            // Add points to player score
+            player.score += points;
+        }
+        
+        // Store answer for this question
+        player.answers[questionIndex] = {
+            questionType,
+            answerIndex: questionType === 'multiple-choice' ? answerIndex : undefined,
+            textAnswer: questionType === 'text-answer' ? textAnswer : undefined,
+            answer: questionType === 'true-false' ? answer : undefined,
+            isCorrect,
+            points
+        };
+        
+        // Notify host about the answer
+        io.to(game.hostSocket).emit('player-answered', {
+            playerId: player.id,
+            playerName: player.name,
+            questionIndex,
+            questionType,
+            answerIndex: questionType === 'multiple-choice' ? answerIndex : undefined,
+            textAnswer: questionType === 'text-answer' ? textAnswer : undefined,
+            answer: questionType === 'true-false' ? answer : undefined,
+            isCorrect
+        });
+        
+        // Send result back to player
+        socket.emit('answer-result', {
+            isCorrect,
+            points,
+            correctAnswerIndex: questionType === 'multiple-choice' ? answerIndex : undefined,
+            correctAnswer: questionType === 'text-answer' && !isCorrect ? question.textAnswer?.correctAnswer : undefined
+        });
+    });
 });
 
 // Add this middleware to make io accessible in routes
