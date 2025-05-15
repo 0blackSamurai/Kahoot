@@ -656,6 +656,30 @@
     .btn-next-question, .btn-show-results {
         font-size: 1.2rem;
         padding: 15px 30px;
+        cursor: pointer;
+        position: relative;
+        z-index: 100;
+        opacity: 1;
+        background-color: var(--kahoot-purple);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: transform 0.2s, background-color 0.2s;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-next-question:hover, .btn-show-results:hover {
+        transform: translateY(-3px);
+        background-color: var(--kahoot-light-purple);
+    }
+    
+    .btn-show-results {
+        background-color: var(--kahoot-green);
+    }
+    
+    .btn-show-results:hover {
+        background-color: #26a65b;
     }
     
     .results-screen {
@@ -1083,7 +1107,10 @@
         // Game controls
         startGameBtn.addEventListener('click', startGame);
         nextQuestionBtn.addEventListener('click', nextQuestion);
-        showResultsBtn.addEventListener('click', showResults);
+        showResultsBtn.addEventListener('click', function() {
+            console.log("Show results button clicked");
+            showResults();
+        });
         document.getElementById('playAgainBtn').addEventListener('click', playAgain);
         
         function startGame() {
@@ -1351,40 +1378,110 @@
                 case 'true-false':
                     // Highlight the correct true/false answer
                     if (question.isTrueCorrect) {
+                        trueAnswerBar.parentElement.classList.add('tf-correct');
                         trueAnswerBar.style.border = '2px solid var(--kahoot-green)';
+                        
+                        // Send reveal to players
+                        socket.emit('reveal-answer', {
+                            gameCode,
+                            questionType: 'true-false',
+                            correctAnswer: true
+                        });
                     } else {
+                        falseAnswerBar.parentElement.classList.add('tf-correct');
                         falseAnswerBar.style.border = '2px solid var(--kahoot-green)';
+                        
+                        // Send reveal to players
+                        socket.emit('reveal-answer', {
+                            gameCode,
+                            questionType: 'true-false',
+                            correctAnswer: false
+                        });
                     }
+                    
+                    // Calculate and show result statistics
+                    const trueCount = parseInt(trueAnswerCount.textContent || 0);
+                    const falseCount = parseInt(falseAnswerCount.textContent || 0);
+                    const totalAnswers = trueCount + falseCount;
+                    const correctAnswers = question.isTrueCorrect ? trueCount : falseCount;
+                    const correctPercentage = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
+                    
+                    // Show answer statistics 
+                    const statsEl = document.createElement('div');
+                    statsEl.className = 'tf-stats';
+                    statsEl.innerHTML = `
+                        <div class="tf-stats-item">
+                            <span class="tf-stats-value">${correctAnswers}</span> correct answers
+                        </div>
+                        <div class="tf-stats-item">
+                            <span class="tf-stats-value">${correctPercentage}%</span> accuracy
+                        </div>
+                    `;
+                    trueFalseDisplay.appendChild(statsEl);
                     break;
             }
             
-            // Show next button or results button
+            // Show next button or results button - improved visibility
             if (currentQuestionIndex < quizData.questions.length - 1) {
                 nextQuestionBtn.style.display = 'block';
+                showResultsBtn.style.display = 'none'; // Ensure results button is hidden
             } else {
-                showResultsBtn.style.display = 'block';
+                nextQuestionBtn.style.display = 'none'; // Ensure next button is hidden
+                showResultsBtn.style.display = 'block'; // Show results button
+                console.log('Showing results button');
+                
+                // Force button to be visible and clickable
+                showResultsBtn.style.visibility = 'visible';
+                showResultsBtn.style.opacity = '1';
+                showResultsBtn.style.zIndex = '1000';
             }
             
             // Play sound effect
             playSound('/sounds/question-end.mp3');
         }
         
-        function nextQuestion() {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < quizData.questions.length) {
-                loadQuestion(currentQuestionIndex);
-            }
-        }
-        
         function showResults() {
+            console.log('showResults function called');
             gameState = 'finished';
             
-            // Sort players by score
+            // Process player data first - add rank and calculate total correct answers
             const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
             
-            // Notify all players about game end
-            socket.emit('end-game', { gameCode });
+            // Add rank to each player
+            sortedPlayers.forEach((player, index) => {
+                player.rank = index + 1;
+                
+                // Calculate correct answers if not already done
+                if (!player.correctAnswers) {
+                    player.correctAnswers = player.answers.filter(a => a && a.isCorrect).length;
+                }
+            });
             
+            // Notify all players about game end with processed player data
+            socket.emit('game-over', { 
+                gameCode,
+                players: sortedPlayers.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    score: p.score,
+                    rank: p.rank,
+                    correctAnswers: p.correctAnswers
+                }))
+            });
+            
+            // Update podium and populate results
+            updateResultsUI(sortedPlayers);
+            
+            // Hide game area, show results
+            gameArea.style.display = 'none';
+            resultsScreen.style.display = 'block';
+            
+            // Play victory sound
+            playSound('/sounds/game-end.mp3');
+        }
+        
+        // New helper function to update results UI to avoid duplication
+        function updateResultsUI(sortedPlayers) {
             // Update podium
             if (sortedPlayers.length > 0) {
                 const firstPlace = document.getElementById('firstPlace');
@@ -1408,26 +1505,18 @@
             const resultsTableBody = document.getElementById('resultsTableBody');
             resultsTableBody.innerHTML = '';
             
-            sortedPlayers.forEach((player, index) => {
-                // Calculate correct answers
-                const correctAnswers = player.answers.filter(a => a && a.isCorrect).length;
+            sortedPlayers.forEach((player) => {
+                const correctAnswers = player.correctAnswers || 0;
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${index + 1}</td>
+                    <td>${player.rank}</td>
                     <td>${player.name}</td>
                     <td>${player.score}</td>
                     <td>${correctAnswers} / ${quizData.questions.length}</td>
                 `;
                 resultsTableBody.appendChild(row);
             });
-            
-            // Hide game area, show results
-            gameArea.style.display = 'none';
-            resultsScreen.style.display = 'block';
-            
-            // Play victory sound
-            playSound('/sounds/game-end.mp3');
         }
         
         function playAgain() {
@@ -1468,7 +1557,40 @@
                     return type.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
             }
         }
+        
+        // Add style for true/false correct answer indicator
+        const styleEl = document.createElement('style');
+        styleEl.textContent = `
+            .tf-correct {
+                box-shadow: 0 0 0 5px white;
+                animation: pulse-border 2s infinite;
+            }
+            
+            .tf-stats {
+                display: flex;
+                justify-content: space-around;
+                margin-top: 20px;
+                color: var(--dark-text-secondary);
+                padding-top: 15px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .tf-stats-value {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: var(--kahoot-light-purple);
+                display: block;
+            }
+            
+            @keyframes pulse-border {
+                0% { box-shadow: 0 0 0 5px rgba(255,255,255,0.8); }
+                70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+                100% { box-shadow: 0 0 0 5px rgba(255,255,255,0); }
+            }
+        `;
+        document.head.appendChild(styleEl);
     });
 </script>
 
 <%- include('./partials/footer') %>
+``` 

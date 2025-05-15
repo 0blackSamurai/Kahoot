@@ -390,6 +390,36 @@ io.on('connection', (socket) => {
             correctAnswer: questionType === 'text-answer' && !isCorrect ? question.textAnswer?.correctAnswer : undefined
         });
     });
+
+    // Add enhanced end-question event handler
+    socket.on('end-question', ({ gameCode }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        // Notify all players
+        io.to(gameCode).emit('question-ended');
+    });
+
+    // Add reveal-answer event handler
+    socket.on('reveal-answer', ({ gameCode, questionType, correctAnswer }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        // Forward the reveal to all players
+        io.to(gameCode).emit('reveal-answer', {
+            questionType,
+            correctAnswer
+        });
+    });
+
+    // Enhanced game-over event
+    socket.on('game-over', ({ gameCode, players }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        // Mark game as finished
+        gameRooms[gameCode].status = 'finished';
+        
+        // Send results to all players with full player data
+        io.to(gameCode).emit('game-over', { players });
+    });
 });
 
 // Add this middleware to make io accessible in routes
