@@ -185,9 +185,25 @@ exports.viewQuiz = async (req, res) => {
             });
         }
         
+        // Debug output to help troubleshoot permission issues
+        console.log('Quiz access attempted:');
+        console.log('- Quiz ID:', req.params.id);
+        console.log('- Quiz creator ID:', quiz.createdBy?._id || quiz.createdBy);
+        console.log('- Current user ID:', req.user?.userId);
+        console.log('- User role:', req.user?.role);
+        console.log('- Quiz is public:', quiz.isPublic);
+        
         // Check if user is authorized to view this quiz
-        const isOwner = req.user && req.user.userId === quiz.createdBy.toString();
-        if (!quiz.isPublic && !isOwner) {
+        const creatorId = String(quiz.createdBy?._id || quiz.createdBy);
+        const userId = String(req.user?.userId || '');
+        const isOwner = userId === creatorId;
+        const isAdmin = req.user && req.user.role === 'Admin';
+        
+        console.log('- isOwner check result:', isOwner);
+        console.log('- isAdmin check result:', isAdmin);
+        
+        // Allow if quiz is public, user is owner, or user is admin
+        if (!quiz.isPublic && !isOwner && !isAdmin) {
             return res.status(403).render('error', {
                 title: 'Access Denied',
                 message: 'You do not have permission to view this quiz',
@@ -199,7 +215,8 @@ exports.viewQuiz = async (req, res) => {
         res.render('view', {
             title: quiz.title,
             quiz,
-            isOwner
+            isOwner,
+            isAdmin
         });
     } catch (error) {
         console.error('Error viewing quiz:', error);
@@ -237,9 +254,13 @@ exports.renderEditQuiz = async (req, res) => {
         // Debug output
         console.log('Quiz creator:', quiz.createdBy.toString());
         console.log('Current user:', req.user.userId);
+        console.log('User role:', req.user.role);
         
-        // Check if user is authorized to edit this quiz
-        if (req.user.userId !== quiz.createdBy.toString()) {
+        // Check if user is authorized to edit this quiz (owner or admin)
+        const isOwner = req.user.userId === quiz.createdBy.toString();
+        const isAdmin = req.user.role === 'Admin';
+        
+        if (!isOwner && !isAdmin) {
             return res.status(403).render('error', {
                 title: 'Access Denied',
                 message: 'You do not have permission to edit this quiz',
@@ -284,7 +305,11 @@ exports.updateQuiz = async (req, res) => {
             });
         }
         
-        if (req.user.userId !== quiz.createdBy.toString()) {
+        // Check if user is authorized to edit this quiz (owner or admin)
+        const isOwner = req.user.userId === quiz.createdBy.toString();
+        const isAdmin = req.user.role === 'Admin';
+        
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ message: 'Not authorized to edit this quiz' });
         }
         
