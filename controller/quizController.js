@@ -152,7 +152,13 @@ exports.createQuiz = async (req, res) => {
             
             // Add type-specific data
             if (q.questionType === 'multiple-choice' || !q.questionType) {
-                questionData.options = q.options;
+                // Filter out options with empty text
+                questionData.options = q.options.filter(opt => opt.text && opt.text.trim() !== '');
+                
+                // If no valid options remain, add a default option
+                if (questionData.options.length === 0) {
+                    questionData.options = [{ text: 'Option 1', isCorrect: true }];
+                }
             } else if (q.questionType === 'text-answer') {
                 questionData.textAnswer = {
                     correctAnswer: q.textAnswer.correctAnswer,
@@ -335,7 +341,13 @@ exports.updateQuiz = async (req, res) => {
             
             // Add type-specific data
             if (q.questionType === 'multiple-choice' || !q.questionType) {
-                questionData.options = q.options;
+                // Filter out options with empty text
+                questionData.options = q.options.filter(opt => opt.text && opt.text.trim() !== '');
+                
+                // If no valid options remain, add a default option
+                if (questionData.options.length === 0) {
+                    questionData.options = [{ text: 'Option 1', isCorrect: true }];
+                }
             } else if (q.questionType === 'text-answer') {
                 questionData.textAnswer = {
                     correctAnswer: q.textAnswer.correctAnswer,
