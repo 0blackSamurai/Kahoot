@@ -76,6 +76,29 @@ exports.getUserQuizzes = async (req, res) => {
     }
 };
 
+// Get all public quizzes for discover page
+exports.getPublicQuizzes = async (req, res) => {
+    try {
+        // Find all public quizzes
+        const quizzes = await Quiz.find({ isPublic: true })
+            .sort({ updatedAt: -1 })
+            .populate('createdBy', 'username');
+        
+        res.render('list', {
+            title: 'Discover Quizzes',
+            quizzes,
+            isMyQuizzes: false
+        });
+    } catch (error) {
+        console.error('Error fetching public quizzes:', error);
+        res.status(500).render('error', {
+            title: 'Error',
+            message: 'Failed to load public quizzes',
+            error: { status: 500 }
+        });
+    }
+};
+
 // Render quiz creation page
 exports.renderCreateQuiz = (req, res) => {
     res.render('create', {
@@ -383,17 +406,23 @@ exports.playQuiz = async (req, res) => {
                 
                 // Add data specific to question type
                 if (q.questionType === 'multiple-choice' || !q.questionType) {
+                    // Fix: Include isCorrect field for singleplayer mode
                     question.options = q.options.map(opt => ({
                         _id: opt._id,
-                        text: opt.text
-                        // Exclude isCorrect field
+                        text: opt.text,
+                        isCorrect: opt.isCorrect // Pass the correct flag
                     }));
                 } else if (q.questionType === 'true-false') {
-                    // For true/false, just need the type
+                    // Fix: Include the correct answer for true/false questions
+                    question.isTrueCorrect = q.isTrueCorrect;
                 } else if (q.questionType === 'text-answer') {
                     // Keep minimal information needed for display
                     question.textAnswer = {
-                        // Just preserve structure but not the correct answer
+                        // Include the correct answer for validation
+                        correctAnswer: q.textAnswer.correctAnswer,
+                        caseSensitive: q.textAnswer.caseSensitive,
+                        exactMatch: q.textAnswer.exactMatch,
+                        alternativeAnswers: q.textAnswer.alternativeAnswers,
                         answerPlaceholder: "Type your answer here..."
                     };
                 } else if (q.questionType === 'ordering') {

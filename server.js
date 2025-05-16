@@ -511,8 +511,26 @@ app.use((req, res) => {
     });
 });
 
-// Start the server
+// Start the server with port fallback mechanism
 const PORT = process.env.PORT || 3005;
-server.listen(PORT, () => {
-    console.log(`🚀 Server started on port ${PORT}`);
-});
+const MAX_PORT_ATTEMPTS = 10;
+
+function startServer(port, attempt = 1) {
+    server.once('error', (err) => {
+        if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
+            console.warn(`⚠️ Port ${port} is in use, trying ${port + 1}...`);
+            server.close();
+            startServer(port + 1, attempt + 1);
+        } else {
+            console.error(`❌ Failed to start server after ${attempt} attempts:`, err);
+            process.exit(1);
+        }
+    });
+
+    server.listen(port, () => {
+        console.log(`🚀 Server started on port ${port}`);
+    });
+}
+
+// Try to start server on the preferred port, with fallback
+startServer(PORT);

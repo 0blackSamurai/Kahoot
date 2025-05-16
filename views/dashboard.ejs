@@ -866,6 +866,51 @@
         align-items: center;
     }
     
+    .role-selector {
+        padding: 4px 8px;
+        border-radius: 4px;
+        border: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        background-color: var(--dark-input-bg);
+        color: white;
+    }
+    
+    .role-selector.admin {
+        background-color: var(--kahoot-purple);
+    }
+    
+    .role-selector.user {
+        background-color: var(--kahoot-blue);
+    }
+    
+    .current-user-badge {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        background-color: var(--dark-secondary-bg);
+        border-radius: 4px;
+        color: var(--dark-text-secondary);
+    }
+    
+    .role {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+    
+    .role.admin {
+        background-color: var(--kahoot-purple);
+        color: white;
+    }
+    
+    .role.user {
+        background-color: var(--kahoot-blue);
+        color: white;
+    }
+    
     @keyframes toastIn {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
@@ -1239,24 +1284,47 @@
                     
                     const joinDate = new Date(user.createdAt).toLocaleDateString();
                     const userID = user._id ? user._id.substring(0, 8) + '...' : 'N/A';
+                    const currentUserId = '<%= locals.userId %>'; // Get current user ID from server
+                    
+                    // Determine if this user is the current logged-in admin
+                    const isCurrentUser = user._id === currentUserId;
+                    
+                    // Create role dropdown or static display based on whether it's the current user
+                    let roleCell;
+                    if (isCurrentUser) {
+                        // Current user can't change their own role
+                        roleCell = `<span class="role ${(user.role || 'user').toLowerCase()}">${user.role || 'User'}</span>`;
+                    } else {
+                        roleCell = `
+                            <select class="role-selector" data-user-id="${user._id}">
+                                <option value="User" ${user.role === 'User' ? 'selected' : ''}>User</option>
+                                <option value="Admin" ${user.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        `;
+                    }
                     
                     row.innerHTML = `
                         <td>${userID}</td>
                         <td>${user.username || 'N/A'}</td>
                         <td>${user.epost || 'N/A'}</td>
-                        <td><span class="role ${(user.role || 'user').toLowerCase()}">${user.role || 'User'}</span></td>
+                        <td>${roleCell}</td>
                         <td>${joinDate || 'N/A'}</td>
                         <td class="actions">
-                            <button class="btn-icon" title="Edit User" onclick="editUser('${user._id}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <a href="#" onclick="deleteUser('${user._id}')" class="btn-delete">
-                                <i class="fas fa-trash"></i> Delete
-                            </a>
+                            ${!isCurrentUser ? 
+                                `<a href="#" onclick="deleteUser('${user._id}')" class="btn-delete">
+                                    <i class="fas fa-trash"></i> Delete
+                                </a>` : 
+                                '<span class="current-user-badge">Current User</span>'
+                            }
                         </td>
                     `;
                     
                     tableBody.appendChild(row);
+                });
+                
+                // Add event listeners for role selectors
+                document.querySelectorAll('.role-selector').forEach(selector => {
+                    selector.addEventListener('change', handleRoleChange);
                 });
                 
                 // Hide loading, show table
@@ -1274,6 +1342,52 @@
                 `;
                 showToast('error', 'Failed to load users. Please try again.');
             }
+        }
+        
+        // Handle role change
+        async function handleRoleChange(e) {
+            const userId = e.target.dataset.userId;
+            const newRole = e.target.value;
+            
+            try {
+                const response = await fetch('/user/users/role', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId,
+                        role: newRole
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update role');
+                }
+                
+                const data = await response.json();
+                
+                // Update UI
+                showToast('success', `User role updated to ${newRole}`);
+                
+                // Update the class for styling
+                const selectElement = e.target;
+                const oldClasses = Array.from(selectElement.classList).filter(c => c !== 'role-selector');
+                selectElement.className = `role-selector ${newRole.toLowerCase()}`;
+                
+            } catch (error) {
+                console.error('Error updating role:', error);
+                showToast('error', error.message || 'Failed to update role');
+                
+                // Revert selection
+                if (e.target.dataset.previousValue) {
+                    e.target.value = e.target.dataset.previousValue;
+                }
+            }
+            
+            // Store current value for potential revert
+            e.target.dataset.previousValue = e.target.value;
         }
         
         // Quiz table functions

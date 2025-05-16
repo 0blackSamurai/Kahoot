@@ -102,6 +102,11 @@ exports.updateUserRole = async (req, res) => {
             return res.status(400).json({ error: 'Invalid role' });
         }
         
+        // Prevent admins from changing their own role
+        if (userId === req.user.userId) {
+            return res.status(403).json({ error: 'You cannot change your own role' });
+        }
+        
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             { role },
@@ -112,6 +117,7 @@ exports.updateUserRole = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
+        console.log(`User ${userId} role updated to ${role} by admin ${req.user.userId}`);
         res.status(200).json(updatedUser);
     } catch (error) {
         console.error('Error updating user role:', error);

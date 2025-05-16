@@ -27,6 +27,9 @@ router.post('/join-by-id', quizController.joinQuizById);
 router.get('/lobby/:code', quizController.gameLobby);
 router.get('/public-games', quizController.getPublicGames);
 
+// Quiz discovery route - access to all public quizzes
+router.get('/discover', quizController.getPublicQuizzes);
+
 // Add new route for player's game view
 router.get('/play-game/:code', quizController.playGameAsPlayer);
 

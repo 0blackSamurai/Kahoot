@@ -976,7 +976,11 @@
             selectedOption.classList.add('selected');
             
             const question = questions[currentQuestionIndex];
-            const isCorrect = question.options[optionIndex].isCorrect;
+
+
+            // Fix: Properly check if option is correct by accessing isCorrect property
+            const isCorrect = question.options && question.options[optionIndex] && 
+                             question.options[optionIndex].isCorrect === true;
             
             // Save user's answer
             userAnswers.push({
@@ -1000,60 +1004,7 @@
                 showNextButton();
             }, 500);
         }
-        
-        // Ordering answer handling
-        function submitOrdering() {
-            if (answered) return; // Prevent multiple submissions
-            answered = true;
-            clearInterval(timer);
-            
-            const question = questions[currentQuestionIndex];
-            const correctOrder = question.orderItems || question.options?.map(opt => opt.text) || [];
-            const currentOrder = [];
-            
-            // Get current order from DOM
-            const orderingItemsElements = orderingItemsEl.querySelectorAll('.ordering-item');
-            orderingItemsElements.forEach(item => {
-                currentOrder.push(orderingItems[parseInt(item.dataset.index)]);
-            });
-            
-            // Check if order is correct
-            const isCorrect = arraysEqual(currentOrder, correctOrder);
-            
-            // Save user's answer
-            userAnswers.push({
-                questionIndex: currentQuestionIndex,
-                submittedOrder: currentOrder,
-                correct: isCorrect,
-                type: 'ordering'
-            });
-            
-            // Update score if correct
-            if (isCorrect) {
-                score += calculatePoints(timeLeft);
-                updateScore();
-            }
-            
-            // Highlight correct/incorrect
-            orderingItemsElements.forEach((item, idx) => {
-                if (orderingItems[parseInt(item.dataset.index)] === correctOrder[idx]) {
-                    item.style.backgroundColor = "var(--kahoot-green)";
-                } else {
-                    item.style.backgroundColor = "var(--kahoot-red)";
-                    item.style.opacity = "0.7";
-                }
-            });
-            
-            // Disable further interaction
-            submitOrderingBtn.disabled = true;
-            orderingItemsElements.forEach(item => {
-                item.draggable = false;
-            });
-            
-            // Show next button
-            showNextButton();
-        }
-        
+
         // True/False answer handling
         function selectTrueFalse(isTrue) {
             if (answered) return; // Prevent multiple selections
@@ -1065,6 +1016,7 @@
             falseButtonEl.classList.toggle('selected', !isTrue);
             
             const question = questions[currentQuestionIndex];
+            // Fix: Make sure we're comparing the same data types (boolean to boolean)
             const isCorrect = question.isTrueCorrect === isTrue;
             
             // Save user's answer
@@ -1083,10 +1035,10 @@
             
             // Show feedback
             setTimeout(() => {
-                if (question.isTrueCorrect) {
+                if (question.isTrueCorrect === true) {
                     trueButtonEl.style.borderColor = "white";
                     trueButtonEl.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.5)";
-                } else {
+                } else if (question.isTrueCorrect === false) {
                     falseButtonEl.style.borderColor = "white";
                     falseButtonEl.style.boxShadow = "0 0 20px rgba(255, 255, 255, 0.5)";
                 }
@@ -1101,8 +1053,10 @@
             const question = questions[currentQuestionIndex];
             const options = optionsGridEl.children;
             
+            // Fix: Add null checks to avoid errors
             for (let i = 0; i < options.length; i++) {
-                if (question.options[i].isCorrect) {
+                // Check if this option exists in the question options array and is marked as correct
+                if (question.options && question.options[i] && question.options[i].isCorrect === true) {
                     options[i].classList.add('correct');
                 } else if (options[i].classList.contains('selected')) {
                     options[i].classList.add('incorrect');

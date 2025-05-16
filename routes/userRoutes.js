@@ -15,7 +15,7 @@ router.get('/faq', (req, res) => {
 
 // User management routes (admin only)
 router.get('/all', isAuthenticated, isAdmin, userController.getAllUsers);
-router.put('/users/role', isAuthenticated, isAdmin, userController.updateUserRole);
+router.put('/users/role', isAuthenticated, isAdmin, userController.updateUserRole); // Ensure this route exists
 router.get('/users/support-staff', isAuthenticated, isAdmin, userController.getSupportStaff);
 router.get('/user-management', isAuthenticated, isAdmin, userController.renderUserManagement);
 
