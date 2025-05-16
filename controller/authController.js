@@ -27,7 +27,11 @@ exports.register = async (req, res) => {
         }
 
         // Hash password
-        const hashedPassword = await bcrypt.hash(passord, parseInt(process.env.SALTROUNDS));
+        SALTROUNDS=process.env.SALTROUNDS;
+        console.log("SALTROUNDS",SALTROUNDS)
+        console.log(typeof SALTROUNDS)
+         
+        const hashedPassword = await bcrypt.hash(passord, SALTROUNDS);
 
         // Create new user
         const newUser = new User({
