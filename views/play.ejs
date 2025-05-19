@@ -1210,7 +1210,82 @@
         
         function arraysEqual(a, b) {
             if (a.length !== b.length) return false;
-            return a.every((val, idx) => val === b[idx]);
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+        
+        function submitOrdering() {
+            if (answered) return; // Prevent multiple submissions
+            answered = true;
+            clearInterval(timer);
+            
+            // Get the current order from the DOM
+            const currentOrder = Array.from(orderingItemsEl.querySelectorAll('.ordering-item'))
+                .map(item => orderingItems[item.dataset.index]);
+                
+            // Get the correct order from the question
+            const question = questions[currentQuestionIndex];
+            const correctOrder = question.orderItems || [];
+            
+            // Check if the order is correct
+            const isCorrect = arraysEqual(currentOrder, correctOrder);
+            
+            // Save user's answer
+            userAnswers.push({
+                questionIndex: currentQuestionIndex,
+                submittedOrder: currentOrder,
+                correct: isCorrect,
+                type: 'ordering'
+            });
+            
+            // Update score if correct
+            if (isCorrect) {
+                score += calculatePoints(timeLeft);
+                updateScore();
+            }
+            
+            // Show feedback (highlight items in green or red)
+            const orderingItemElements = orderingItemsEl.querySelectorAll('.ordering-item');
+            orderingItemElements.forEach((item, idx) => {
+                // Disable dragging
+                item.draggable = false;
+                
+                if (isCorrect) {
+                    item.style.backgroundColor = "var(--kahoot-green)";
+                    item.style.color = "white";
+                } else {
+                    item.style.backgroundColor = "var(--kahoot-red)";
+                    item.style.opacity = "0.7";
+                }
+            });
+            
+            // If incorrect, could also show the correct order here
+            if (!isCorrect && correctOrder.length > 0) {
+                const correctOrderDisplay = document.createElement('div');
+                correctOrderDisplay.className = 'correct-order-display';
+                correctOrderDisplay.innerHTML = `
+                    <div class="answer-feedback incorrect">
+                        <i class="fas fa-times-circle"></i> Incorrect! The correct order was:
+                        <ol class="correct-order-list">
+                            ${correctOrder.map(item => `<li>${item}</li>`).join('')}
+                        </ol>
+                    </div>
+                `;
+                orderingContainerEl.appendChild(correctOrderDisplay);
+            } else if (isCorrect) {
+                const correctFeedback = document.createElement('div');
+                correctFeedback.className = 'answer-feedback correct';
+                correctFeedback.innerHTML = '<i class="fas fa-check-circle"></i> Correct order!';
+                orderingContainerEl.appendChild(correctFeedback);
+            }
+            
+            // Disable the submit button
+            submitOrderingBtn.disabled = true;
+            
+            // Show next button
+            showNextButton();
         }
         
         // Event Listeners

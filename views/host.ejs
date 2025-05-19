@@ -1002,6 +1002,27 @@
             }
         });
         
+        // Add handler for player score updates
+        socket.on('player-score-updated', ({ playerId, playerName, score, questionIndex }) => {
+            console.log(`Player ${playerName} score updated to: ${score}`);
+            
+            // Update the player's score in our local data
+            const playerIndex = players.findIndex(p => p.id === playerId);
+            if (playerIndex !== -1) {
+                players[playerIndex].score = score;
+                
+                // Make sure we have an answers array
+                if (!players[playerIndex].answers) {
+                    players[playerIndex].answers = [];
+                }
+                
+                // Update the specific question's points if available
+                if (players[playerIndex].answers[questionIndex]) {
+                    players[playerIndex].answers[questionIndex].points = score;
+                }
+            }
+        });
+        
         // Enhanced function to update text answer display
         function updateTextAnswerDisplay(textAnswer, playerName, isCorrect) {
             // Remove placeholder if present
@@ -1106,11 +1127,30 @@
         
         // Game controls
         startGameBtn.addEventListener('click', startGame);
-        nextQuestionBtn.addEventListener('click', nextQuestion);
+        
+        // Update nextQuestion handler to properly advance to the next question
+        nextQuestionBtn.addEventListener('click', function() {
+            console.log('Next question button clicked');
+            
+            // Disable button to prevent multiple clicks
+            nextQuestionBtn.style.display = 'none';
+            
+            // Increment current question index
+            currentQuestionIndex++;
+            
+            // Notify players about advancing to next question
+            socket.emit('host-advance-question', { gameCode });
+            
+            // Load the next question
+            loadQuestion(currentQuestionIndex);
+        });
+        
+        // Update showResultsBtn handler to ensure it shows results
         showResultsBtn.addEventListener('click', function() {
-            console.log("Show results button clicked");
+            console.log('Show Results button clicked');
             showResults();
         });
+        
         document.getElementById('playAgainBtn').addEventListener('click', playAgain);
         
         function startGame() {
@@ -1139,7 +1179,7 @@
             const question = quizData.questions[index];
             
             // Notify players about new question
-            socket.emit('next-question', {
+            socket.emit('question-started', {
                 gameCode,
                 questionIndex: index
             });
@@ -1421,30 +1461,30 @@
                     break;
             }
             
-            // Show next button or results button - improved visibility
+            // Update the next/results button visibility logic to ensure buttons are visible
             if (currentQuestionIndex < quizData.questions.length - 1) {
-                nextQuestionBtn.style.display = 'block';
-                showResultsBtn.style.display = 'none'; // Ensure results button is hidden
+                nextQuestionBtn.style.display = 'inline-block';
+                nextQuestionBtn.style.opacity = '1';
+                nextQuestionBtn.style.zIndex = '100';
+                showResultsBtn.style.display = 'none';
             } else {
-                nextQuestionBtn.style.display = 'none'; // Ensure next button is hidden
-                showResultsBtn.style.display = 'block'; // Show results button
-                console.log('Showing results button');
-                
-                // Force button to be visible and clickable
-                showResultsBtn.style.visibility = 'visible';
+                nextQuestionBtn.style.display = 'none';
+                showResultsBtn.style.display = 'inline-block';
                 showResultsBtn.style.opacity = '1';
-                showResultsBtn.style.zIndex = '1000';
+                showResultsBtn.style.zIndex = '100';
+                console.log('This is the last question - showing results button');
             }
             
             // Play sound effect
             playSound('/sounds/question-end.mp3');
         }
         
+        // Enhanced showResults function to ensure score consistency
         function showResults() {
-            console.log('showResults function called');
+            console.log('showResults function called - processing players data');
             gameState = 'finished';
             
-            // Process player data first - add rank and calculate total correct answers
+            // Process player data
             const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
             
             // Add rank to each player
@@ -1453,9 +1493,21 @@
                 
                 // Calculate correct answers if not already done
                 if (!player.correctAnswers) {
-                    player.correctAnswers = player.answers.filter(a => a && a.isCorrect).length;
+                    player.correctAnswers = (player.answers || []).filter(a => a && a.isCorrect).length;
+                }
+                
+                // Ensure score is defined
+                if (player.score === undefined || player.score === null) {
+                    player.score = 0;
+                    console.warn(`Player ${player.name} had undefined score, setting to 0`);
                 }
             });
+            
+            console.log('Final player standings:', sortedPlayers.map(p => ({ 
+                name: p.name, 
+                score: p.score, 
+                rank: p.rank 
+            })));
             
             // Notify all players about game end with processed player data
             socket.emit('game-over', { 
@@ -1463,9 +1515,9 @@
                 players: sortedPlayers.map(p => ({
                     id: p.id,
                     name: p.name,
-                    score: p.score,
+                    score: p.score || 0,
                     rank: p.rank,
-                    correctAnswers: p.correctAnswers
+                    correctAnswers: p.correctAnswers || 0
                 }))
             });
             
@@ -1593,4 +1645,3 @@
 </script>
 
 <%- include('./partials/footer') %>
-``` 

@@ -656,6 +656,7 @@
         const trueFalseArea = document.getElementById('trueFalseArea');
         const trueButton = document.getElementById('trueButton');
         const falseButton = document.getElementById('falseButton');
+        const nextQuestionBtn = null;
         
         // Game state
         let currentQuestionIndex = 0;
@@ -666,6 +667,8 @@
         let answered = false;
         let totalQuestionsCount = 0;
         let isGameActive = false;
+        let lastQuestionIndex = -1;
+        let isLastQuestion = false;
         
         // Debug function - add this to help troubleshoot
         function debugLog(message) {
@@ -726,6 +729,11 @@
             debugLog('Question started event received: ' + JSON.stringify(data));
             currentQuestionIndex = data.questionIndex;
             
+            // Check if this is a new question or if we're catching up
+            if (currentQuestionIndex > lastQuestionIndex) {
+                lastQuestionIndex = currentQuestionIndex;
+            }
+            
             // Reset for new question
             resetQuestion();
             
@@ -741,6 +749,10 @@
             questionData = data;
             totalQuestionsCount = data.totalQuestions;
             
+            // Determine if this is the last question
+            isLastQuestion = (currentQuestionIndex === totalQuestionsCount - 1);
+            debugLog(`Question ${currentQuestionIndex + 1}/${totalQuestionsCount} - Is last: ${isLastQuestion}`);
+            
             // Update UI with question data
             loadQuestion(data);
         });
@@ -752,6 +764,16 @@
             // If not answered, show timeout
             if (!answered) {
                 showAnswerFeedback(false, 0, 'Time\'s Up!');
+            }
+            
+            // Update waiting message
+            const waitingNext = document.querySelector('.waiting-next');
+            if (waitingNext) {
+                if (isLastQuestion) {
+                    waitingNext.textContent = 'Game complete! Waiting for results...';
+                } else {
+                    waitingNext.textContent = 'Waiting for host to continue...';
+                }
             }
         });
         
@@ -777,9 +799,27 @@
         socket.on('game-over', (data) => {
             debugLog('Game over event received: ' + JSON.stringify(data));
             
+            // Process player data if not already ranked
+            if (data.players && !data.players[0].hasOwnProperty('rank')) {
+                // Sort players by score (highest first)
+                data.players.sort((a, b) => b.score - a.score);
+                
+                // Add rankings
+                data.players.forEach((player, index) => {
+                    player.rank = index + 1;
+                });
+            }
+            
             // Show final results
             showResults(data);
             isGameActive = false;
+            
+            // Clear any existing buttons in the answer status area
+            const answerStatusButtons = document.querySelectorAll('#answerStatus button');
+            answerStatusButtons.forEach(button => button.style.display = 'none');
+            
+            // Ensure results are shown even if answer status is displayed
+            answerStatus.style.display = 'none';
         });
         
         // Function to reset question state
@@ -1139,6 +1179,14 @@
                 setTimeout(() => {
                     playerScore.classList.remove('score-update');
                 }, 1000);
+                
+                // Report updated score to host
+                socket.emit('update-player-score', {
+                    gameCode,
+                    playerId: playerId || socket.id,
+                    score: score,
+                    questionIndex: currentQuestionIndex
+                });
             } else {
                 answerIcon.className = 'fas fa-times';
                 answerIcon.style.color = 'var(--kahoot-red)';
@@ -1157,33 +1205,57 @@
             resultsArea.style.display = 'flex';
             
             // Set player's results
-            const playerData = data.players.find(p => p.id === (playerId || socket.id));
+            let playerData = null;
+            if (data.players) {
+                playerData = data.players.find(p => 
+                    p.id === playerId || 
+                    p.id === socket.id ||
+                    p.socketId === socket.id ||
+                    p.name === playerName
+                );
+            }
             
             if (playerData) {
-                playerRank.textContent = playerData.rank;
-                finalScore.textContent = playerData.score;
+                playerRank.textContent = playerData.rank || "-";
+                finalScore.textContent = playerData.score || score;
+                debugLog(`Found player data: rank=${playerData.rank}, score=${playerData.score}`);
             } else {
                 playerRank.textContent = "-";
                 finalScore.textContent = score;
+                debugLog('Player data not found in results, using local score');
             }
             
             // Display top players
             topPlayers.innerHTML = '';
-            const top5Players = data.players.slice(0, 5);
             
-            top5Players.forEach((player, index) => {
-                const isCurrentPlayer = player.id === (playerId || socket.id);
-                const playerRow = document.createElement('div');
-                playerRow.className = `player-row ${isCurrentPlayer ? 'highlight' : ''}`;
+            if (data.players && data.players.length > 0) {
+                const top5Players = data.players.slice(0, 5);
+                debugLog(`Displaying top ${top5Players.length} players`);
                 
-                playerRow.innerHTML = `
-                    <div class="player-rank">#${player.rank}</div>
-                    <div class="player-name">${player.name}${isCurrentPlayer ? ' (You)' : ''}</div>
-                    <div class="player-score">${player.score}</div>
-                `;
-                
-                topPlayers.appendChild(playerRow);
-            });
+                top5Players.forEach((player, index) => {
+                    const isCurrentPlayer = 
+                        player.id === playerId || 
+                        player.id === socket.id ||
+                        player.socketId === socket.id ||
+                        player.name === playerName;
+                        
+                    const playerRow = document.createElement('div');
+                    playerRow.className = `player-row ${isCurrentPlayer ? 'highlight' : ''}`;
+                    
+                    const rank = player.rank || index + 1;
+                    playerRow.innerHTML = `
+                        <div class="player-rank">#${rank}</div>
+                        <div class="player-name">${player.name}${isCurrentPlayer ? ' (You)' : ''}</div>
+                        <div class="player-score">${player.score || 0}</div>
+                    `;
+                    
+                    topPlayers.appendChild(playerRow);
+                });
+            } else {
+                // Fallback if no player data is provided
+                topPlayers.innerHTML = '<div class="player-row"><div class="player-name">No player data available</div></div>';
+                debugLog('No player data available for results display');
+            }
         }
         
         // Add event listeners to option buttons
@@ -1268,6 +1340,27 @@
             setTimeout(() => {
                 hostDisconnectMsg.remove();
             }, 5000);
+        });
+
+        // Handle request-results response
+        socket.on('send-results', (data) => {
+            debugLog('Received game results');
+            showResults(data);
+        });
+
+        // Add new event for when host manually advances to next question
+        socket.on('host-advance-question', () => {
+            debugLog('Host advanced to next question');
+            // Clear any pending UI elements from previous question
+            const seeResultsButtons = document.querySelectorAll('.see-results-button');
+            if (seeResultsButtons.length > 0) {
+                seeResultsButtons.forEach(btn => btn.remove());
+            }
+            
+            // Hide answer status to prepare for next question
+            answerStatus.style.display = 'none';
+            waitingArea.style.display = 'flex';
+            waitingMessage.textContent = 'Host is loading the next question...';
         });
     });
 </script>
