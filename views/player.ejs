@@ -727,21 +727,95 @@
         
         socket.on('question-started', (data) => {
             debugLog('Question started event received: ' + JSON.stringify(data));
-            currentQuestionIndex = data.questionIndex;
             
-            // Check if this is a new question or if we're catching up
-            if (currentQuestionIndex > lastQuestionIndex) {
-                lastQuestionIndex = currentQuestionIndex;
+            try {
+                // Update current question index if data is valid
+                if (data && typeof data.questionIndex !== 'undefined') {
+                    currentQuestionIndex = data.questionIndex;
+                
+                    // Check if this is a new question or if we're catching up
+                    if (currentQuestionIndex > lastQuestionIndex) {
+                        lastQuestionIndex = currentQuestionIndex;
+                        debugLog(`Advancing to new question ${currentQuestionIndex + 1}`);
+                    }
+                
+                    // Reset for new question
+                    resetQuestion();
+                
+                    // Request question data from server
+                    socket.emit('get-question', {
+                        gameCode,
+                        questionIndex: currentQuestionIndex
+                    });
+                } else {
+                    // Handle incomplete data
+                    debugLog('Received incomplete question data, requesting current game state');
+                    socket.emit('get-game-state', { gameCode });
+                }
+            } catch (error) {
+                // Recover from errors in question handling
+                debugLog('Error processing question: ' + error.message);
+                // Try to reset and reconnect
+                setTimeout(() => {
+                    socket.emit('get-game-state', { gameCode });
+                }, 1000);
             }
             
-            // Reset for new question
-            resetQuestion();
+            // Add safety timeout - if question data doesn't arrive in 3 seconds, try again
+            setTimeout(() => {
+                if (!questionData || questionData.questionIndex !== currentQuestionIndex) {
+                    debugLog('Question data timeout - requesting again');
+                    socket.emit('get-question', {
+                        gameCode,
+                        questionIndex: currentQuestionIndex
+                    });
+                }
+            }, 3000);
+        });
+        
+        // Add general error handler for socket events
+        socket.on('error', (error) => {
+            debugLog('Socket error: ' + error);
+            // Show user-friendly message
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'host-disconnect-message';
+            errorMsg.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Connection issue occurred. Trying to reconnect...</p>
+            `;
+            document.body.appendChild(errorMsg);
             
-            // Request question data from server
-            socket.emit('get-question', {
-                gameCode,
-                questionIndex: currentQuestionIndex
-            });
+            setTimeout(() => {
+                errorMsg.remove();
+                // Try to refresh game state
+                if (isGameActive) {
+                    socket.emit('get-game-state', { gameCode });
+                }
+            }, 3000);
+        });
+        
+        // Enhance reconnection logic
+        socket.on('connect', () => {
+            console.log('Socket connected with ID:', socket.id);
+            
+            // Store connection info in localStorage to help with reconnection
+            localStorage.setItem('gameCode', gameCode);
+            localStorage.setItem('playerName', playerName);
+            
+            // If we were previously connected and playing
+            if (isGameActive) {
+                console.log('Reconnecting to game...');
+                
+                // Join the game again
+                socket.emit('join-game', {
+                    gameCode,
+                    playerName,
+                    playerId: playerId || localStorage.getItem('playerId') || socket.id
+                });
+                
+                // Get current game state
+                socket.emit('get-game-state', { gameCode });
+            }
         });
         
         socket.on('question-data', (data) => {
@@ -1361,6 +1435,46 @@
             answerStatus.style.display = 'none';
             waitingArea.style.display = 'flex';
             waitingMessage.textContent = 'Host is loading the next question...';
+            
+            // Reset game state variables to prepare for next question
+            answered = false;
+            lastQuestionIndex = currentQuestionIndex;
+            
+            // Add a bit of delay to give the host time to finish processing
+            // This ensures we don't get out of sync with the host
+            setTimeout(() => {
+                // Request the current game state to check if we need to update
+                socket.emit('get-game-state', { gameCode });
+                
+                // Additionally, make a direct request for the next question's data
+                // This ensures the player doesn't get stuck waiting
+                socket.emit('get-question', {
+                    gameCode,
+                    questionIndex: currentQuestionIndex + 1
+                });
+            }, 500);
+        });
+        
+        // Improve game-state handler to better handle in-progress games
+        socket.on('game-state', (data) => {
+            debugLog('Game state received: ' + JSON.stringify(data));
+            
+            if (data.status === 'playing' && data.currentQuestion !== currentQuestionIndex) {
+                debugLog(`Updating current question from ${currentQuestionIndex} to ${data.currentQuestion}`);
+                
+                // Update question index
+                currentQuestionIndex = data.currentQuestion;
+                lastQuestionIndex = currentQuestionIndex;
+                
+                // Reset for new question
+                resetQuestion();
+                
+                // Request data for the current question
+                socket.emit('get-question', {
+                    gameCode, 
+                    questionIndex: currentQuestionIndex
+                });
+            }
         });
     });
 </script>
