@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 exports.register = async (req, res) => {
+    console.log("hei")
     const { username, epost, passord, confirmpassord } = req.body;
 
     try {
@@ -26,18 +27,33 @@ exports.register = async (req, res) => {
         }
 
         // Hash password
-        const hashedPassword = await bcrypt.hash(passord, parseInt(process.env.SALTROUNDS));
+        SALTROUNDS=process.env.SALTROUNDS;
+        try {
+            SALTROUNDS = parseInt(SALTROUNDS, 10); // Ensure it's an integer
+            if (isNaN(SALTROUNDS) || SALTROUNDS <= 0) {
+                throw new Error('Invalid SALTROUNDS value');
+            }
+        } catch (error) {
+            console.error('Error parsing SALTROUNDS:', error);
+            return res.status(500).send('Server error: Invalid SALTROUNDS value');
+        }
+        console.log("SALTROUNDS",SALTROUNDS)
+        console.log(typeof SALTROUNDS)
+         
+        const hashedPassword = await bcrypt.hash(passord, SALTROUNDS);
 
         // Create new user
+        console.log("creating new user")
+
         const newUser = new User({
             username,
             epost,
             passord: hashedPassword,
             role: 'User' // Default role
         });
-
+        console.log("new user",newUser)
         await newUser.save();
-        
+        console.log("new user saved")
         // Auto-login after registration
         const token = jwt.sign(
             { userId: newUser._id, role: newUser.role },

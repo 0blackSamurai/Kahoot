@@ -391,6 +391,36 @@ io.on('connection', (socket) => {
         });
     });
 
+    // Add handler for player requesting results
+    socket.on('request-results', ({ gameCode, playerId }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        const game = gameRooms[gameCode];
+        
+        // Create a copy of players with rankings
+        const rankedPlayers = [...game.players];
+        
+        // Sort by score and assign ranks
+        rankedPlayers.sort((a, b) => b.score - a.score);
+        rankedPlayers.forEach((player, index) => {
+            player.rank = index + 1;
+        });
+        
+        // Send results directly to the requesting player
+        socket.emit('send-results', { players: rankedPlayers });
+        
+        console.log(`Sending game results to player ${playerId || socket.id}`);
+    });
+    
+    // Add handler for player ready for next question
+    socket.on('player-ready-for-next', ({ gameCode, questionIndex, playerId }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        // Notify host that a player is ready for the next question
+        const hostSocket = gameRooms[gameCode].hostSocket;
+        io.to(hostSocket).emit('player-ready-for-next', { playerId, questionIndex });
+    });
+
     // Add enhanced end-question event handler
     socket.on('end-question', ({ gameCode }) => {
         if (!gameRooms[gameCode]) return;
@@ -419,6 +449,44 @@ io.on('connection', (socket) => {
         
         // Send results to all players with full player data
         io.to(gameCode).emit('game-over', { players });
+    });
+
+    // Add handler for player updating their score
+    socket.on('update-player-score', ({ gameCode, playerId, score, questionIndex }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        const game = gameRooms[gameCode];
+        
+        // Find the player
+        const playerIndex = game.players.findIndex(p => 
+            (playerId && p.id === playerId) || p.socketId === socket.id
+        );
+        
+        if (playerIndex === -1) return;
+        
+        // Update player's score
+        game.players[playerIndex].score = score;
+        
+        // Notify host about the score update
+        io.to(game.hostSocket).emit('player-score-updated', {
+            playerId: game.players[playerIndex].id,
+            playerName: game.players[playerIndex].name,
+            score: score,
+            questionIndex
+        });
+        
+        console.log(`Updated player ${game.players[playerIndex].name} score to ${score}`);
+    });
+
+    // When host advances to next question
+    socket.on('host-advance-question', ({ gameCode }) => {
+        if (!gameRooms[gameCode]) return;
+        
+        // Update game state
+        gameRooms[gameCode].currentQuestion++;
+        
+        // Notify players that the host is advancing to next question
+        io.to(gameCode).emit('host-advance-question');
     });
 });
 
@@ -511,8 +579,26 @@ app.use((req, res) => {
     });
 });
 
-// Start the server
+// Start the server with port fallback mechanism
 const PORT = process.env.PORT || 3005;
-server.listen(PORT, () => {
-    console.log(`🚀 Server started on port ${PORT}`);
-});
+const MAX_PORT_ATTEMPTS = 10;
+
+function startServer(port, attempt = 1) {
+    server.once('error', (err) => {
+        if (err.code === 'EADDRINUSE' && attempt < MAX_PORT_ATTEMPTS) {
+            console.warn(`⚠️ Port ${port} is in use, trying ${port + 1}...`);
+            server.close();
+            startServer(port + 1, attempt + 1);
+        } else {
+            console.error(`❌ Failed to start server after ${attempt} attempts:`, err);
+            process.exit(1);
+        }
+    });
+
+    server.listen(port, () => {
+        console.log(`🚀 Server started on port ${port}`);
+    });
+}
+
+// Try to start server on the preferred port, with fallback
+startServer(PORT);
