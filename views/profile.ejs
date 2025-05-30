@@ -31,7 +31,7 @@
         <% if (userQuizzes && userQuizzes.length > 0) { %>
             <div class="quiz-cards">
                 <% userQuizzes.slice(0, 3).forEach(quiz => { %>
-                    <div class="quiz-card" data-id="<%= quiz._id %>">data-id="<%= quiz._id %>">
+                    <div class="quiz-card" data-id="<%= quiz._id %>">
                         <div class="quiz-card-header">
                             <h3><%= quiz.title %></h3>
                             <% if (quiz.isPublic) { %>
@@ -65,11 +65,11 @@
                 <% }) %>
             </div>
             
-            <% if (userQuizzes.length > 3) { %>
-                <div class="view-all">
+            <!-- <% if (userQuizzes.length > 3) { %>
+                 <div class="view-all">
                     <a href="/quiz/my-quizzes">View all your quizzes <i class="fas fa-arrow-right"></i></a>
-                </div>
-            <% } %>
+                </div> -->
+            <!-- <% } %> --> 
         <% } else { %>
             <div class="empty-state">
                 <i class="fas fa-folder-open"></i>
